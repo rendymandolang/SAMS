@@ -29,8 +29,8 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'Purchase Order',
-                'description' => 'Kontrol pesanan ke supplier, nilai transaksi, dan status penerimaan.',
-                'status' => 'Fondasi siap',
+                'description' => 'Kontrol pesanan ke supplier dari PR approved. Draft PO dari PR sudah tersedia.',
+                'status' => 'Aktif',
             ],
             [
                 'name' => 'Inventory',

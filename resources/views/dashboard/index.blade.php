@@ -85,6 +85,11 @@
                             <p class="muted" style="margin:6px 0 0;">Draft PR dari departemen dan validasi budget awal.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-requests.create') }}">Buat PR</a>
                         </div>
+                        <div class="quick-action">
+                            <strong>Purchase Order</strong>
+                            <p class="muted" style="margin:6px 0 0;">PO dari Purchase Request yang sudah approved.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-orders.index') }}">Buka PO</a>
+                        </div>
                     </div>
 
                     <div style="margin-top:22px;padding:18px;border-radius:18px;background:linear-gradient(145deg,#6259ca,#20c997);color:#fff;">

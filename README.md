@@ -47,6 +47,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Dashboard awal SAMS dengan sidebar modul
 - Seeder akun admin, company, branch, department, unit, supplier, gudang, kategori, dan item demo
 - Purchase Request draft, edit draft, detail, nomor dokumen otomatis, budget line, validasi sisa budget, submit, approve, dan reject awal
+- Purchase Order draft dari Purchase Request approved
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget
@@ -93,7 +94,7 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 Urutan kerja berikutnya:
 
 1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Purchase Order dari Purchase Request.
+2. Submit/approve Purchase Order.
 3. Goods Receipt dan stock movement.
 4. Role/permission yang lebih detail untuk tiap modul.
 5. Audit trail tampilan dan laporan budget.

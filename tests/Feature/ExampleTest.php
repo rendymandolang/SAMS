@@ -450,4 +450,66 @@ class ExampleTest extends TestCase
             'comments' => 'Rejected by test',
         ]);
     }
+
+    public function test_purchase_order_can_be_created_from_approved_purchase_request(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+        $supplier = DB::table('suppliers')->where('code', 'SUP-FOOD-01')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PR to PO',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR to PO')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/approve');
+
+        $response = $this->actingAs($user)->post('/purchase-orders/from-pr/'.$purchaseRequest->id, [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->format('Y-m-d'),
+            'expected_date' => now()->addDays(7)->format('Y-m-d'),
+            'notes' => 'PO from test',
+        ]);
+
+        $purchaseOrder = DB::table('purchase_orders')
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->firstOrFail();
+
+        $response->assertRedirect('/purchase-orders/'.$purchaseOrder->id);
+
+        $this->assertDatabaseHas('purchase_orders', [
+            'id' => $purchaseOrder->id,
+            'status' => 'draft',
+            'supplier_id' => $supplier->id,
+            'total_amount' => 145000,
+        ]);
+
+        $this->assertDatabaseHas('purchase_order_items', [
+            'purchase_order_id' => $purchaseOrder->id,
+            'item_id' => $item->id,
+            'line_total' => 145000,
+        ]);
+
+        $this->assertDatabaseHas('purchase_requests', [
+            'id' => $purchaseRequest->id,
+            'status' => 'converted_to_po',
+        ]);
+    }
 }

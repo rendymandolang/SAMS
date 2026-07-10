@@ -30,6 +30,9 @@
                             <button class="button danger inline" type="submit">Reject</button>
                         </form>
                     @endif
+                    @if ($header->status === 'approved')
+                        <a class="button inline" href="{{ route('purchase-orders.create-from-pr', $header->id) }}">Buat PO</a>
+                    @endif
                 </div>
             </header>
 
