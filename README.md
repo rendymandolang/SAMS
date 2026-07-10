@@ -64,6 +64,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
 - Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol
 - Asset Register awal untuk mencatat aset, lokasi, departemen, kondisi, nilai perolehan, audit, dan print asset card
+- Asset registration dari Goods Receipt posted untuk item bertipe asset, termasuk link balik ke asset card
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $header->document_number.' · SAMS'])
+@extends('layouts.app', ['title' => $header->document_number.' - SAMS'])
 
 @section('body')
     <div class="app-shell">
@@ -79,6 +79,7 @@
                             <th>Unit Cost</th>
                             <th>Lot</th>
                             <th>Expiry</th>
+                            <th>Asset</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -92,6 +93,15 @@
                                 <td>Rp {{ number_format((float) $item->unit_cost, 0, ',', '.') }}</td>
                                 <td>{{ $item->lot_number ?: '-' }}</td>
                                 <td>{{ $item->expiry_date ?: '-' }}</td>
+                                <td>
+                                    @if ($item->registered_asset_id)
+                                        <a class="link-action" href="{{ route('assets.show', $item->registered_asset_id) }}">{{ $item->registered_asset_number }}</a>
+                                    @elseif ($header->status === 'posted' && $item->item_type === 'asset' && (float) $item->accepted_quantity > 0 && auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                                        <a class="link-action" href="{{ route('assets.create-from-gr-item', $item->id) }}">Register Asset</a>
+                                    @else
+                                        <span class="muted">-</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                         </tbody>

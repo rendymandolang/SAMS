@@ -1065,6 +1065,114 @@ class ExampleTest extends TestCase
         $printResponse->assertSee('Diperiksa oleh');
     }
 
+    public function test_asset_can_be_registered_from_posted_goods_receipt_item(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'OPS')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-LAPTOP-OPS')->firstOrFail();
+        $supplier = DB::table('suppliers')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'Asset dari GR',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 1,
+                    'estimated_unit_price' => 9500000,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'Asset dari GR')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/approve');
+        $this->actingAs($user)->post('/purchase-orders/from-pr/'.$purchaseRequest->id, [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->format('Y-m-d'),
+        ]);
+
+        $purchaseOrder = DB::table('purchase_orders')
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/submit');
+        $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/approve');
+
+        $purchaseOrderItem = DB::table('purchase_order_items')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/goods-receipts/from-po/'.$purchaseOrder->id, [
+            'storage_location_id' => $location->id,
+            'received_at' => now()->format('Y-m-d\TH:i'),
+            'lines' => [
+                [
+                    'purchase_order_item_id' => $purchaseOrderItem->id,
+                    'accepted_quantity' => 1,
+                    'rejected_quantity' => 0,
+                ],
+            ],
+        ]);
+
+        $goodsReceipt = DB::table('goods_receipts')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/post');
+
+        $goodsReceiptItem = DB::table('goods_receipt_items')
+            ->where('goods_receipt_id', $goodsReceipt->id)
+            ->firstOrFail();
+
+        $createResponse = $this->actingAs($user)->get('/assets/create/from-gr-item/'.$goodsReceiptItem->id);
+
+        $createResponse->assertOk();
+        $createResponse->assertSee('Source GR');
+        $createResponse->assertSee('ITM-LAPTOP-OPS');
+
+        $storeResponse = $this->actingAs($user)->post('/assets', [
+            'goods_receipt_item_id' => $goodsReceiptItem->id,
+            'item_id' => $item->id,
+            'department_id' => $department->id,
+            'storage_location_id' => $location->id,
+            'asset_name' => 'Laptop dari GR',
+            'asset_number' => '',
+            'serial_number' => 'GR-ASSET-001',
+            'acquisition_date' => now()->format('Y-m-d'),
+            'acquisition_cost' => 9500000,
+            'condition' => 'good',
+            'status' => 'active',
+            'notes' => 'Asset dibuat dari Goods Receipt.',
+        ]);
+
+        $asset = DB::table('asset_registers')
+            ->where('goods_receipt_item_id', $goodsReceiptItem->id)
+            ->firstOrFail();
+
+        $storeResponse->assertRedirect('/assets/'.$asset->id);
+        $this->assertDatabaseHas('asset_registers', [
+            'id' => $asset->id,
+            'goods_receipt_item_id' => $goodsReceiptItem->id,
+            'asset_name' => 'Laptop dari GR',
+            'serial_number' => 'GR-ASSET-001',
+        ]);
+
+        $goodsReceiptResponse = $this->actingAs($user)->get('/goods-receipts/'.$goodsReceipt->id);
+
+        $goodsReceiptResponse->assertOk();
+        $goodsReceiptResponse->assertSee($asset->asset_number);
+        $goodsReceiptResponse->assertSee('ITM-LAPTOP-OPS');
+    }
+
     public function test_purchasing_cycle_report_shows_pr_po_and_gr_progress(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();

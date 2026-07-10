@@ -21,6 +21,15 @@
             <section class="card">
                 <form method="POST" action="{{ route('assets.store') }}">
                     @csrf
+                    @if ($sourceGoodsReceiptItem)
+                        <input type="hidden" name="goods_receipt_item_id" value="{{ $sourceGoodsReceiptItem->goods_receipt_item_id }}">
+
+                        <div class="notice">
+                            Source GR: {{ $sourceGoodsReceiptItem->goods_receipt_number }} -
+                            {{ $sourceGoodsReceiptItem->sku }} {{ $sourceGoodsReceiptItem->item_name }}
+                            ({{ number_format((float) $sourceGoodsReceiptItem->accepted_quantity, 2, ',', '.') }} {{ $sourceGoodsReceiptItem->unit_code }})
+                        </div>
+                    @endif
 
                     <div class="form-grid">
                         <label class="field">
@@ -30,7 +39,7 @@
 
                         <label class="field">
                             <span class="label">Nama Asset</span>
-                            <input class="input" name="asset_name" value="{{ old('asset_name') }}" required placeholder="Contoh: Laptop Operations FO-01">
+                            <input class="input" name="asset_name" value="{{ old('asset_name', $sourceGoodsReceiptItem?->item_name) }}" required placeholder="Contoh: Laptop Operations FO-01">
                         </label>
 
                         <label class="field">
@@ -38,7 +47,7 @@
                             <select class="input" name="item_id" required>
                                 <option value="">Pilih item asset</option>
                                 @foreach ($items as $item)
-                                    <option value="{{ $item->id }}" @selected((int) old('item_id') === (int) $item->id)>{{ $item->sku }} - {{ $item->name }}</option>
+                                    <option value="{{ $item->id }}" @selected((int) old('item_id', $sourceGoodsReceiptItem?->item_id) === (int) $item->id)>{{ $item->sku }} - {{ $item->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -63,19 +72,19 @@
                             <select class="input" name="storage_location_id">
                                 <option value="">Pilih lokasi</option>
                                 @foreach ($locations as $location)
-                                    <option value="{{ $location->id }}" @selected((int) old('storage_location_id') === (int) $location->id)>{{ $location->code }} - {{ $location->name }}</option>
+                                    <option value="{{ $location->id }}" @selected((int) old('storage_location_id', $sourceGoodsReceiptItem?->storage_location_id) === (int) $location->id)>{{ $location->code }} - {{ $location->name }}</option>
                                 @endforeach
                             </select>
                         </label>
 
                         <label class="field">
                             <span class="label">Tanggal Perolehan</span>
-                            <input class="input" name="acquisition_date" type="date" value="{{ old('acquisition_date', now()->format('Y-m-d')) }}" required>
+                            <input class="input" name="acquisition_date" type="date" value="{{ old('acquisition_date', $sourceGoodsReceiptItem ? \Illuminate\Support\Carbon::parse($sourceGoodsReceiptItem->received_at)->format('Y-m-d') : now()->format('Y-m-d')) }}" required>
                         </label>
 
                         <label class="field">
                             <span class="label">Nilai Perolehan</span>
-                            <input class="input" name="acquisition_cost" type="number" min="0" step="0.01" value="{{ old('acquisition_cost', 0) }}" required>
+                            <input class="input" name="acquisition_cost" type="number" min="0" step="0.01" value="{{ old('acquisition_cost', $sourceGoodsReceiptItem?->unit_cost ?? 0) }}" required>
                         </label>
 
                         <label class="field">
@@ -98,7 +107,7 @@
 
                         <label class="field full">
                             <span class="label">Catatan</span>
-                            <textarea class="input" name="notes" placeholder="Catatan kondisi, lokasi detail, atau informasi garansi">{{ old('notes') }}</textarea>
+                            <textarea class="input" name="notes" placeholder="Catatan kondisi, lokasi detail, atau informasi garansi">{{ old('notes', $sourceGoodsReceiptItem ? 'Dibuat dari Goods Receipt '.$sourceGoodsReceiptItem->goods_receipt_number : '') }}</textarea>
                         </label>
                     </div>
 

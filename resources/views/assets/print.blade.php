@@ -65,6 +65,8 @@
                 <div class="box"><span class="muted">Acquisition Cost</span><strong>Rp {{ number_format((float) $asset->acquisition_cost, 0, ',', '.') }}</strong></div>
                 <div class="box"><span class="muted">Condition</span><strong>{{ strtoupper($asset->condition) }}</strong></div>
                 <div class="box"><span class="muted">Status</span><strong>{{ strtoupper($asset->status) }}</strong></div>
+                <div class="box"><span class="muted">Source GR</span><strong>{{ $asset->goods_receipt_number ?: '-' }}</strong></div>
+                <div class="box"><span class="muted">Created By</span><strong>{{ $asset->creator_name }}</strong></div>
             </div>
         </section>
 

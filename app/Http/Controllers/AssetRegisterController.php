@@ -6,6 +6,7 @@ use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AssetRegisterController extends Controller
@@ -71,6 +72,34 @@ class AssetRegisterController extends Controller
             'conditions' => $this->conditions(),
             'statuses' => $this->statuses(),
             'nextAssetNumber' => $this->previewNextAssetNumber((int) $company->id),
+            'sourceGoodsReceiptItem' => null,
+        ]);
+    }
+
+    public function createFromGoodsReceiptItem(int $goodsReceiptItem): View|RedirectResponse
+    {
+        $company = $this->company();
+        $sourceGoodsReceiptItem = $this->findAssetSourceGoodsReceiptItem($goodsReceiptItem, (int) $company->id);
+
+        $existingAsset = DB::table('asset_registers')
+            ->where('goods_receipt_item_id', $sourceGoodsReceiptItem->goods_receipt_item_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($existingAsset) {
+            return redirect()
+                ->route('assets.show', $existingAsset->id)
+                ->with('status', 'Item Goods Receipt ini sudah memiliki asset register.');
+        }
+
+        return view('assets.create', [
+            'items' => $this->assetItems((int) $company->id),
+            'departments' => $this->departments((int) $company->id),
+            'locations' => $this->locations((int) $company->id),
+            'conditions' => $this->conditions(),
+            'statuses' => $this->statuses(),
+            'nextAssetNumber' => $this->previewNextAssetNumber((int) $company->id),
+            'sourceGoodsReceiptItem' => $sourceGoodsReceiptItem,
         ]);
     }
 
@@ -81,6 +110,7 @@ class AssetRegisterController extends Controller
 
         $validated = $request->validate([
             'item_id' => ['required', 'integer', 'exists:items,id'],
+            'goods_receipt_item_id' => ['nullable', 'integer', 'exists:goods_receipt_items,id'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'storage_location_id' => ['nullable', 'integer', 'exists:storage_locations,id'],
             'asset_name' => ['required', 'string', 'max:255'],
@@ -93,6 +123,27 @@ class AssetRegisterController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $sourceGoodsReceiptItem = null;
+
+        if (filled($validated['goods_receipt_item_id'] ?? null)) {
+            $sourceGoodsReceiptItem = $this->findAssetSourceGoodsReceiptItem((int) $validated['goods_receipt_item_id'], (int) $company->id);
+
+            if ((int) $sourceGoodsReceiptItem->item_id !== (int) $validated['item_id']) {
+                throw ValidationException::withMessages([
+                    'item_id' => 'Item asset harus sama dengan item pada Goods Receipt.',
+                ]);
+            }
+
+            if (DB::table('asset_registers')
+                ->where('goods_receipt_item_id', $sourceGoodsReceiptItem->goods_receipt_item_id)
+                ->whereNull('deleted_at')
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'goods_receipt_item_id' => 'Item Goods Receipt ini sudah didaftarkan sebagai asset.',
+                ]);
+            }
+        }
+
         $item = DB::table('items')
             ->where('company_id', $company->id)
             ->where('id', $validated['item_id'])
@@ -100,18 +151,19 @@ class AssetRegisterController extends Controller
             ->whereNull('deleted_at')
             ->firstOrFail();
 
-        $assetId = DB::transaction(function () use ($company, $branch, $validated, $item) {
+        $assetId = DB::transaction(function () use ($company, $branch, $validated, $item, $sourceGoodsReceiptItem) {
+            $assetBranchId = $sourceGoodsReceiptItem?->branch_id ?? $branch->id;
             $assetNumber = filled($validated['asset_number'] ?? null)
                 ? $validated['asset_number']
-                : $this->nextAssetNumber((int) $company->id, (int) $branch->id);
+                : $this->nextAssetNumber((int) $company->id, (int) $assetBranchId);
 
             $assetId = DB::table('asset_registers')->insertGetId([
                 'company_id' => $company->id,
-                'branch_id' => $branch->id,
+                'branch_id' => $assetBranchId,
                 'department_id' => $validated['department_id'] ?? null,
-                'storage_location_id' => $validated['storage_location_id'] ?? null,
+                'storage_location_id' => $validated['storage_location_id'] ?? $sourceGoodsReceiptItem?->storage_location_id,
                 'item_id' => $item->id,
-                'goods_receipt_item_id' => null,
+                'goods_receipt_item_id' => $sourceGoodsReceiptItem?->goods_receipt_item_id,
                 'asset_number' => $assetNumber,
                 'asset_name' => $validated['asset_name'],
                 'serial_number' => $validated['serial_number'] ?? null,
@@ -125,7 +177,10 @@ class AssetRegisterController extends Controller
                 'updated_at' => now(),
             ]);
 
-            AuditLogger::log('asset_created', 'asset_register', $assetId, null, ['asset_number' => $assetNumber], (int) $company->id);
+            AuditLogger::log('asset_created', 'asset_register', $assetId, null, [
+                'asset_number' => $assetNumber,
+                'goods_receipt_item_id' => $sourceGoodsReceiptItem?->goods_receipt_item_id,
+            ], (int) $company->id);
 
             return $assetId;
         });
@@ -158,6 +213,8 @@ class AssetRegisterController extends Controller
         $assetRow = DB::table('asset_registers')
             ->join('items', 'items.id', '=', 'asset_registers.item_id')
             ->join('users', 'users.id', '=', 'asset_registers.created_by')
+            ->leftJoin('goods_receipt_items', 'goods_receipt_items.id', '=', 'asset_registers.goods_receipt_item_id')
+            ->leftJoin('goods_receipts', 'goods_receipts.id', '=', 'goods_receipt_items.goods_receipt_id')
             ->leftJoin('departments', 'departments.id', '=', 'asset_registers.department_id')
             ->leftJoin('storage_locations', 'storage_locations.id', '=', 'asset_registers.storage_location_id')
             ->where('asset_registers.company_id', $company->id)
@@ -173,12 +230,44 @@ class AssetRegisterController extends Controller
                 'departments.name as department_name',
                 'storage_locations.code as location_code',
                 'storage_locations.name as location_name',
+                'goods_receipts.document_number as goods_receipt_number',
             )
             ->first();
 
         abort_unless($assetRow, 404);
 
         return $assetRow;
+    }
+
+    private function findAssetSourceGoodsReceiptItem(int $goodsReceiptItem, int $companyId): object
+    {
+        $sourceGoodsReceiptItem = DB::table('goods_receipt_items')
+            ->join('goods_receipts', 'goods_receipts.id', '=', 'goods_receipt_items.goods_receipt_id')
+            ->join('items', 'items.id', '=', 'goods_receipt_items.item_id')
+            ->join('units', 'units.id', '=', 'goods_receipt_items.unit_id')
+            ->where('goods_receipts.company_id', $companyId)
+            ->where('goods_receipt_items.id', $goodsReceiptItem)
+            ->where('goods_receipts.status', 'posted')
+            ->where('items.item_type', 'asset')
+            ->where('goods_receipt_items.accepted_quantity', '>', 0)
+            ->select(
+                'goods_receipt_items.id as goods_receipt_item_id',
+                'goods_receipt_items.item_id',
+                'goods_receipt_items.unit_cost',
+                'goods_receipt_items.accepted_quantity',
+                'goods_receipts.document_number as goods_receipt_number',
+                'goods_receipts.received_at',
+                'goods_receipts.branch_id',
+                'goods_receipts.storage_location_id',
+                'items.sku',
+                'items.name as item_name',
+                'units.code as unit_code',
+            )
+            ->first();
+
+        abort_unless($sourceGoodsReceiptItem, 404);
+
+        return $sourceGoodsReceiptItem;
     }
 
     private function nextAssetNumber(int $companyId, int $branchId): string

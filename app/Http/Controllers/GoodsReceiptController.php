@@ -154,12 +154,16 @@ class GoodsReceiptController extends Controller
         return DB::table('goods_receipt_items')
             ->join('items', 'items.id', '=', 'goods_receipt_items.item_id')
             ->join('units', 'units.id', '=', 'goods_receipt_items.unit_id')
+            ->leftJoin('asset_registers', 'asset_registers.goods_receipt_item_id', '=', 'goods_receipt_items.id')
             ->where('goods_receipt_items.goods_receipt_id', $goodsReceiptId)
             ->select(
                 'goods_receipt_items.*',
                 'items.sku',
                 'items.name as item_name',
+                'items.item_type',
                 'units.code as unit_code',
+                'asset_registers.id as registered_asset_id',
+                'asset_registers.asset_number as registered_asset_number',
             )
             ->orderBy('goods_receipt_items.id')
             ->get();

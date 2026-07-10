@@ -79,7 +79,7 @@
                     </div>
                     <div class="detail-box">
                         <div class="muted">Source GR Item</div>
-                        <div class="value">{{ $asset->goods_receipt_item_id ?: '-' }}</div>
+                        <div class="value">{{ $asset->goods_receipt_number ?: ($asset->goods_receipt_item_id ?: '-') }}</div>
                     </div>
                     <div class="detail-box">
                         <div class="muted">Asset ID</div>

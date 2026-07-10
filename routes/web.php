@@ -84,6 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/assets', [AssetRegisterController::class, 'index'])->name('assets.index');
     Route::middleware('role:super_admin,purchasing,warehouse')->group(function () {
         Route::get('/assets/create', [AssetRegisterController::class, 'create'])->name('assets.create');
+        Route::get('/assets/create/from-gr-item/{goodsReceiptItem}', [AssetRegisterController::class, 'createFromGoodsReceiptItem'])->name('assets.create-from-gr-item');
         Route::post('/assets', [AssetRegisterController::class, 'store'])->name('assets.store');
     });
     Route::get('/assets/{asset}/print', [AssetRegisterController::class, 'print'])->name('assets.print');
