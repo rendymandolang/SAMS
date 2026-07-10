@@ -116,6 +116,11 @@
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('asset-maintenances.index') }}">Buka Maintenance</a>
                         </div>
                         <div class="quick-action">
+                            <strong>Maintenance History</strong>
+                            <p class="muted" style="margin:6px 0 0;">Report biaya, overdue, ranking asset, dan histori maintenance.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.assets.maintenance-history') }}">Buka History</a>
+                        </div>
+                        <div class="quick-action">
                             <strong>Stock On Hand</strong>
                             <p class="muted" style="margin:6px 0 0;">Saldo stok per gudang dari stock movement.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('inventory.stock-on-hand') }}">Lihat Stok</a>

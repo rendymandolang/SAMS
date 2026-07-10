@@ -1254,6 +1254,45 @@ class ExampleTest extends TestCase
         $printResponse->assertSee('Bali Tech Service');
     }
 
+    public function test_asset_maintenance_history_report_can_be_rendered(): void
+    {
+        $this->test_asset_maintenance_can_be_created_completed_and_printed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $maintenance = DB::table('asset_maintenances')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/assets/maintenance-history?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Maintenance History Report');
+        $response->assertSee($maintenance->document_number);
+        $response->assertSee('High Attention Assets');
+        $response->assertSee('Bali Tech Service');
+        $response->assertSee('completed');
+    }
+
+    public function test_asset_maintenance_history_print_page_can_be_rendered(): void
+    {
+        $this->test_asset_maintenance_can_be_created_completed_and_printed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $maintenance = DB::table('asset_maintenances')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/assets/maintenance-history/print?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('ASSET MAINTENANCE HISTORY');
+        $response->assertSee($maintenance->document_number);
+        $response->assertSee('Bali Tech Service');
+        $response->assertSee('completed');
+    }
+
     public function test_purchasing_cycle_report_shows_pr_po_and_gr_progress(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();

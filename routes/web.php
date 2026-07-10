@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AssetMaintenanceController;
+use App\Http\Controllers\AssetMaintenanceReportController;
 use App\Http\Controllers\AssetRegisterController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -98,6 +99,10 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/asset-maintenances/{maintenance}/print', [AssetMaintenanceController::class, 'print'])->name('asset-maintenances.print');
     Route::get('/asset-maintenances/{maintenance}', [AssetMaintenanceController::class, 'show'])->name('asset-maintenances.show');
+    Route::middleware('role:super_admin,finance,purchasing,warehouse')->group(function () {
+        Route::get('/reports/assets/maintenance-history', [AssetMaintenanceReportController::class, 'index'])->name('reports.assets.maintenance-history');
+        Route::get('/reports/assets/maintenance-history/print', [AssetMaintenanceReportController::class, 'print'])->name('reports.assets.maintenance-history.print');
+    });
     Route::get('/inventory/stock-on-hand', StockOnHandController::class)->name('inventory.stock-on-hand');
     Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
     Route::middleware('role:super_admin,warehouse')->group(function () {
