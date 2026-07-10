@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -281,6 +282,8 @@ class PurchaseRequestController extends Controller
                 'status' => 'submitted',
                 'updated_at' => now(),
             ]);
+
+            AuditLogger::log('purchase_request_submitted', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'submitted'], (int) $header->company_id);
         });
 
         return redirect()
@@ -326,6 +329,8 @@ class PurchaseRequestController extends Controller
                 'status' => 'approved',
                 'updated_at' => now(),
             ]);
+
+            AuditLogger::log('purchase_request_approved', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'approved', 'comments' => $validated['comments'] ?? null], (int) $header->company_id);
         });
 
         return redirect()
@@ -373,6 +378,8 @@ class PurchaseRequestController extends Controller
                 'status' => 'rejected',
                 'updated_at' => now(),
             ]);
+
+            AuditLogger::log('purchase_request_rejected', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'rejected', 'comments' => $validated['comments'] ?? null], (int) $header->company_id);
         });
 
         return redirect()

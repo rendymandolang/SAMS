@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -227,6 +228,8 @@ class StockOpnameController extends Controller
                 'posted_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            AuditLogger::log('stock_opname_posted', 'stock_opname', (int) $header->id, ['status' => $header->status], ['status' => 'posted'], (int) $header->company_id);
         });
 
         return redirect()

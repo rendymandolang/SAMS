@@ -102,6 +102,14 @@ class ExampleTest extends TestCase
             'role' => 'finance',
             'is_active' => false,
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'user_created',
+            'auditable_type' => 'user',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'user_updated',
+            'auditable_type' => 'user',
+        ]);
     }
 
     public function test_non_super_admin_cannot_access_user_management(): void
@@ -160,6 +168,35 @@ class ExampleTest extends TestCase
             'code' => 'SUP-TEST',
             'name' => 'Supplier Test',
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'master_created',
+            'auditable_type' => 'suppliers',
+        ]);
+    }
+
+    public function test_super_admin_can_open_audit_trail(): void
+    {
+        $this->test_authenticated_user_can_create_supplier();
+
+        $admin = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/audit-logs');
+
+        $response->assertOk();
+        $response->assertSee('Audit Trail');
+        $response->assertSee('master created');
+        $response->assertSee('suppliers');
+    }
+
+    public function test_non_super_admin_cannot_open_audit_trail(): void
+    {
+        $this->seed();
+
+        $warehouse = User::query()->where('email', 'warehouse@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($warehouse)->get('/audit-logs');
+
+        $response->assertForbidden();
     }
 
     public function test_staff_user_cannot_modify_master_data(): void
@@ -810,6 +847,11 @@ class ExampleTest extends TestCase
             'source_id' => $goodsReceipt->id,
             'item_id' => $item->id,
             'quantity' => 10,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'goods_receipt_posted',
+            'auditable_type' => 'goods_receipt',
+            'auditable_id' => $goodsReceipt->id,
         ]);
     }
 

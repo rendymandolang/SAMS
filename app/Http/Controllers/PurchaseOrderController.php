@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -163,6 +164,8 @@ class PurchaseOrderController extends Controller
             'updated_at' => now(),
         ]);
 
+        AuditLogger::log('purchase_order_submitted', 'purchase_order', (int) $header->id, ['status' => $header->status], ['status' => 'submitted'], (int) $header->company_id);
+
         return redirect()
             ->route('purchase-orders.show', $header->id)
             ->with('status', 'Purchase Order berhasil disubmit.');
@@ -182,6 +185,8 @@ class PurchaseOrderController extends Controller
             'status' => 'approved',
             'updated_at' => now(),
         ]);
+
+        AuditLogger::log('purchase_order_approved', 'purchase_order', (int) $header->id, ['status' => $header->status], ['status' => 'approved'], (int) $header->company_id);
 
         return redirect()
             ->route('purchase-orders.show', $header->id)

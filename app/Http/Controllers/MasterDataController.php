@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -130,10 +131,12 @@ class MasterDataController extends Controller
         $config = $this->masterConfig($master);
         $payload = $this->validatedPayload($request, $config);
 
-        DB::table($config['table'])->insert($payload + [
+        $id = DB::table($config['table'])->insertGetId($payload + [
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        AuditLogger::log('master_created', $config['table'], $id, null, $payload);
 
         return redirect()
             ->route('master.index', $master)
@@ -152,12 +155,14 @@ class MasterDataController extends Controller
     public function update(Request $request, string $master, int $id): RedirectResponse
     {
         $config = $this->masterConfig($master);
-        $this->findRow($config, $id);
+        $old = (array) $this->findRow($config, $id);
 
         $payload = $this->validatedPayload($request, $config, $id);
         $payload['updated_at'] = now();
 
         DB::table($config['table'])->where('id', $id)->update($payload);
+
+        AuditLogger::log('master_updated', $config['table'], $id, $old, $payload);
 
         return redirect()
             ->route('master.index', $master)
@@ -167,7 +172,7 @@ class MasterDataController extends Controller
     public function destroy(string $master, int $id): RedirectResponse
     {
         $config = $this->masterConfig($master);
-        $this->findRow($config, $id);
+        $old = (array) $this->findRow($config, $id);
 
         if ($this->deletedAtColumn($config['table']) !== null) {
             DB::table($config['table'])->where('id', $id)->update([
@@ -177,6 +182,8 @@ class MasterDataController extends Controller
         } else {
             DB::table($config['table'])->where('id', $id)->delete();
         }
+
+        AuditLogger::log('master_deleted', $config['table'], $id, $old, null);
 
         return redirect()
             ->route('master.index', $master)

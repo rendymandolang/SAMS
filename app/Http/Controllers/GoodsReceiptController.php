@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -213,6 +214,8 @@ class GoodsReceiptController extends Controller
             ]);
 
             $this->refreshPurchaseOrderReceiptStatus((int) $header->purchase_order_id);
+
+            AuditLogger::log('goods_receipt_posted', 'goods_receipt', (int) $header->id, ['status' => $header->status], ['status' => 'posted'], (int) $header->company_id);
         });
 
         return redirect()

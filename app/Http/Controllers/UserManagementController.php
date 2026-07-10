@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -48,13 +49,15 @@ class UserManagementController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        User::query()->create([
+        $user = User::query()->create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
             'password' => $validated['password'],
             'is_active' => $request->boolean('is_active'),
         ]);
+
+        AuditLogger::log('user_created', 'user', (int) $user->id, null, $user->only(['name', 'email', 'role', 'is_active']));
 
         return redirect()
             ->route('users.index')
@@ -85,6 +88,8 @@ class UserManagementController extends Controller
             $isActive = true;
         }
 
+        $old = $user->only(['name', 'email', 'role', 'is_active']);
+
         $payload = [
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -97,6 +102,8 @@ class UserManagementController extends Controller
         }
 
         $user->update($payload);
+
+        AuditLogger::log('user_updated', 'user', (int) $user->id, $old, $user->fresh()->only(['name', 'email', 'role', 'is_active']));
 
         return redirect()
             ->route('users.index')

@@ -30,8 +30,8 @@
     <nav class="nav-group">
         @if (auth()->user()->hasRole('super_admin'))
             <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><span>User Management</span><span>&rsaquo;</span></a>
+            <a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}"><span>Audit Trail</span><span>&rsaquo;</span></a>
         @endif
         <a class="nav-link" href="#"><span>Approval Flow</span><span>&rsaquo;</span></a>
-        <a class="nav-link" href="#"><span>Audit Trail</span><span>&rsaquo;</span></a>
     </nav>
 </aside>

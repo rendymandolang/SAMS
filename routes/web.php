@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
@@ -29,6 +30,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+        Route::get('/audit-logs', AuditLogController::class)->name('audit-logs.index');
     });
     Route::get('/master', [MasterDataController::class, 'home'])->name('master.home');
     Route::get('/master/{master}', [MasterDataController::class, 'index'])->name('master.index');
