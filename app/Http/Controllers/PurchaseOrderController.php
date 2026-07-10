@@ -133,21 +133,19 @@ class PurchaseOrderController extends Controller
     public function show(int $purchaseOrder): View
     {
         $header = $this->findPurchaseOrder($purchaseOrder);
-
-        $items = DB::table('purchase_order_items')
-            ->join('items', 'items.id', '=', 'purchase_order_items.item_id')
-            ->join('units', 'units.id', '=', 'purchase_order_items.unit_id')
-            ->where('purchase_order_items.purchase_order_id', $header->id)
-            ->select(
-                'purchase_order_items.*',
-                'items.sku',
-                'items.name as item_name',
-                'units.code as unit_code',
-            )
-            ->orderBy('purchase_order_items.id')
-            ->get();
+        $items = $this->purchaseOrderItems((int) $header->id);
 
         return view('purchase_orders.show', compact('header', 'items'));
+    }
+
+    public function print(int $purchaseOrder): View
+    {
+        $header = $this->findPurchaseOrder($purchaseOrder);
+        $items = $this->purchaseOrderItems((int) $header->id);
+        $company = $this->company();
+        $branch = DB::table('branches')->where('id', $header->branch_id)->first();
+
+        return view('purchase_orders.print', compact('header', 'items', 'company', 'branch'));
     }
 
     public function submit(int $purchaseOrder): RedirectResponse
@@ -206,6 +204,9 @@ class PurchaseOrderController extends Controller
                 'suppliers.name as supplier_name',
                 'suppliers.contact_person',
                 'suppliers.phone as supplier_phone',
+                'suppliers.email as supplier_email',
+                'suppliers.address as supplier_address',
+                'suppliers.tax_number as supplier_tax_number',
                 'purchase_requests.document_number as purchase_request_number',
                 'users.name as creator_name',
             )
@@ -252,6 +253,22 @@ class PurchaseOrderController extends Controller
                 'units.code as unit_code',
             )
             ->orderBy('purchase_request_items.id')
+            ->get();
+    }
+
+    private function purchaseOrderItems(int $purchaseOrderId)
+    {
+        return DB::table('purchase_order_items')
+            ->join('items', 'items.id', '=', 'purchase_order_items.item_id')
+            ->join('units', 'units.id', '=', 'purchase_order_items.unit_id')
+            ->where('purchase_order_items.purchase_order_id', $purchaseOrderId)
+            ->select(
+                'purchase_order_items.*',
+                'items.sku',
+                'items.name as item_name',
+                'units.code as unit_code',
+            )
+            ->orderBy('purchase_order_items.id')
             ->get();
     }
 

@@ -568,6 +568,26 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_purchase_order_print_page_can_be_rendered(): void
+    {
+        $this->test_purchase_order_can_be_created_from_approved_purchase_request();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $purchaseOrder = DB::table('purchase_orders')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/purchase-orders/'.$purchaseOrder->id.'/print');
+
+        $response->assertOk();
+        $response->assertSee('PURCHASE ORDER');
+        $response->assertSee($purchaseOrder->document_number);
+        $response->assertSee('Bali Fresh Market');
+        $response->assertSee('ITM-RICE-01');
+        $response->assertSee('Grand Total');
+        $response->assertSee('Dibuat oleh');
+        $response->assertSee('Disetujui oleh');
+        $response->assertSee('Diterima Supplier');
+    }
+
     public function test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order(): void
     {
         $this->seed();
