@@ -355,4 +355,99 @@ class ExampleTest extends TestCase
             'purpose' => 'PR over budget',
         ]);
     }
+
+    public function test_submitted_purchase_request_can_be_approved(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PR untuk approval',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR untuk approval')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $response = $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/approve', [
+            'comments' => 'Approved by test',
+        ]);
+
+        $response->assertRedirect('/purchase-requests/'.$purchaseRequest->id);
+        $this->assertDatabaseHas('purchase_requests', [
+            'id' => $purchaseRequest->id,
+            'status' => 'approved',
+        ]);
+        $this->assertDatabaseHas('approval_actions', [
+            'action' => 'approved',
+            'comments' => 'Approved by test',
+        ]);
+    }
+
+    public function test_rejected_purchase_request_releases_committed_budget(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+        $budgetLine = DB::table('budget_lines')->where('account_code', 'PUR-FNB')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PR untuk reject',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'budget_line_id' => $budgetLine->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR untuk reject')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $this->assertDatabaseHas('budget_lines', [
+            'id' => $budgetLine->id,
+            'committed_amount' => 145000,
+        ]);
+
+        $response = $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/reject', [
+            'comments' => 'Rejected by test',
+        ]);
+
+        $response->assertRedirect('/purchase-requests/'.$purchaseRequest->id);
+        $this->assertDatabaseHas('purchase_requests', [
+            'id' => $purchaseRequest->id,
+            'status' => 'rejected',
+        ]);
+        $this->assertDatabaseHas('budget_lines', [
+            'id' => $budgetLine->id,
+            'committed_amount' => 0,
+        ]);
+        $this->assertDatabaseHas('approval_actions', [
+            'action' => 'rejected',
+            'comments' => 'Rejected by test',
+        ]);
+    }
 }

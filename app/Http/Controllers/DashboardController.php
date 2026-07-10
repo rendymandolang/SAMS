@@ -24,7 +24,7 @@ class DashboardController extends Controller
         $modules = [
             [
                 'name' => 'Purchase Request',
-                'description' => 'Permintaan pembelian dari tiap departemen sebelum menjadi PO. Draft, edit, detail, budget check, dan submit sudah tersedia.',
+                'description' => 'Permintaan pembelian dari tiap departemen sebelum menjadi PO. Draft, edit, budget check, submit, approve, dan reject sudah tersedia.',
                 'status' => 'Aktif',
             ],
             [
@@ -44,8 +44,8 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'Approval Flow',
-                'description' => 'Alur persetujuan dokumen bertingkat berdasarkan aturan bisnis.',
-                'status' => 'Berikutnya',
+                'description' => 'Approval awal Purchase Request sudah aktif, dengan jejak approve/reject.',
+                'status' => 'Aktif',
             ],
             [
                 'name' => 'Audit Trail',
