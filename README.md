@@ -60,6 +60,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Laporan Mutasi Stok dengan filter tanggal, gudang, item, saldo awal, movement masuk/keluar, dan saldo berjalan
 - Budget Control report dengan allocated, committed, actual, remaining, status risiko budget, dan print landscape
 - Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
+- Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget

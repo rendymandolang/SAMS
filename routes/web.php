@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BudgetControlController;
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
         Route::get('/audit-logs', AuditLogController::class)->name('audit-logs.index');
     });
+    Route::get('/approvals', ApprovalCenterController::class)
+        ->middleware('role:super_admin,finance')
+        ->name('approvals.index');
     Route::get('/master', [MasterDataController::class, 'home'])->name('master.home');
     Route::get('/master/{master}', [MasterDataController::class, 'index'])->name('master.index');
     Route::middleware('role:super_admin,purchasing,warehouse')->group(function () {

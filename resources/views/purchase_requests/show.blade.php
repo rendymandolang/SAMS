@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $header->document_number.' · SAMS'])
+@extends('layouts.app', ['title' => $header->document_number.' - SAMS'])
 
 @section('body')
     <div class="app-shell">

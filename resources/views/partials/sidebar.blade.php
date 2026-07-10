@@ -34,6 +34,8 @@
             <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><span>User Management</span><span>&rsaquo;</span></a>
             <a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}"><span>Audit Trail</span><span>&rsaquo;</span></a>
         @endif
-        <a class="nav-link" href="#"><span>Approval Flow</span><span>&rsaquo;</span></a>
+        @if (auth()->user()->hasAnyRole(['super_admin', 'finance']))
+            <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}"><span>Approval Center</span><span>&rsaquo;</span></a>
+        @endif
     </nav>
 </aside>

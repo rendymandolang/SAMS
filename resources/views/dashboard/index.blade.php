@@ -127,6 +127,13 @@
                                 <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('budget-control.index') }}">Buka Control</a>
                             </div>
                         @endif
+                        @if (auth()->user()->hasAnyRole(['super_admin', 'finance']))
+                            <div class="quick-action">
+                                <strong>Approval Center</strong>
+                                <p class="muted" style="margin:6px 0 0;">Satu meja kontrol untuk PR dan PO yang menunggu approval.</p>
+                                <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('approvals.index') }}">Buka Approval</a>
+                            </div>
+                        @endif
                     </div>
 
                     <div style="margin-top:22px;padding:18px;border-radius:18px;background:linear-gradient(145deg,#6259ca,#20c997);color:#fff;">

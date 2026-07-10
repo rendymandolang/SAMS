@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $header->document_number.' · SAMS'])
+@extends('layouts.app', ['title' => $header->document_number.' - SAMS'])
 
 @section('body')
     <div class="app-shell">
@@ -68,7 +68,7 @@
                     </div>
                     <div class="detail-box">
                         <div class="muted">Kontak Supplier</div>
-                        <div class="value">{{ $header->contact_person ?: '-' }} {{ $header->supplier_phone ? '· '.$header->supplier_phone : '' }}</div>
+                        <div class="value">{{ $header->contact_person ?: '-' }} {{ $header->supplier_phone ? ' - '.$header->supplier_phone : '' }}</div>
                     </div>
                 </div>
 

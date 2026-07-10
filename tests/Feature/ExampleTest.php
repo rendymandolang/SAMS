@@ -771,6 +771,87 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_approval_center_shows_pending_purchase_request_and_purchase_order(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+        $supplier = DB::table('suppliers')->where('code', 'SUP-FOOD-01')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'urgent',
+            'purpose' => 'PR approval center',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 5,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $pendingPurchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR approval center')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$pendingPurchaseRequest->id.'/submit');
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PO approval center source',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $sourcePurchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PO approval center source')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$sourcePurchaseRequest->id.'/submit');
+        $this->actingAs($user)->post('/purchase-requests/'.$sourcePurchaseRequest->id.'/approve');
+        $this->actingAs($user)->post('/purchase-orders/from-pr/'.$sourcePurchaseRequest->id, [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->format('Y-m-d'),
+        ]);
+
+        $purchaseOrder = DB::table('purchase_orders')
+            ->where('purchase_request_id', $sourcePurchaseRequest->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/submit');
+
+        $response = $this->actingAs($user)->get('/approvals');
+
+        $response->assertOk();
+        $response->assertSee('Approval Center');
+        $response->assertSee($pendingPurchaseRequest->document_number);
+        $response->assertSee($purchaseOrder->document_number);
+        $response->assertSee('Bali Fresh Market');
+        $response->assertSee('High Priority');
+    }
+
+    public function test_staff_user_cannot_open_approval_center(): void
+    {
+        $this->seed();
+
+        $staff = User::query()->where('email', 'staff@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($staff)->get('/approvals');
+
+        $response->assertForbidden();
+    }
+
     public function test_purchase_order_print_page_can_be_rendered(): void
     {
         $this->test_purchase_order_can_be_created_from_approved_purchase_request();
