@@ -16,6 +16,7 @@ class DashboardController extends Controller
             'suppliers' => DB::table('suppliers')->whereNull('deleted_at')->count(),
             'stock_movements' => DB::table('stock_movements')->count(),
             'goods_receipts' => DB::table('goods_receipts')->count(),
+            'stock_on_hand_value' => DB::table('stock_movements')->sum('total_cost'),
             'budgets' => DB::table('budgets')->count(),
         ];
 

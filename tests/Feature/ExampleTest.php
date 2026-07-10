@@ -656,4 +656,18 @@ class ExampleTest extends TestCase
             'quantity' => 10,
         ]);
     }
+
+    public function test_stock_on_hand_page_shows_posted_stock_balance(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/inventory/stock-on-hand');
+
+        $response->assertOk();
+        $response->assertSee('Stock On Hand');
+        $response->assertSee('ITM-RICE-01');
+        $response->assertSee('MAIN-WH');
+    }
 }

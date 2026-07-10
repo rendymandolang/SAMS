@@ -49,6 +49,11 @@
                     <div class="stat-value">{{ number_format($stats['goods_receipts']) }}</div>
                     <div class="muted">Penerimaan barang</div>
                 </div>
+                <div class="card">
+                    <div class="muted">Nilai Stok</div>
+                    <div class="stat-value">Rp {{ number_format((float) $stats['stock_on_hand_value'], 0, ',', '.') }}</div>
+                    <div class="muted">Stock movement posted</div>
+                </div>
             </section>
 
             <section class="grid content-grid">
@@ -94,6 +99,11 @@
                             <strong>Purchase Order</strong>
                             <p class="muted" style="margin:6px 0 0;">PO dari Purchase Request yang sudah approved.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-orders.index') }}">Buka PO</a>
+                        </div>
+                        <div class="quick-action">
+                            <strong>Stock On Hand</strong>
+                            <p class="muted" style="margin:6px 0 0;">Saldo stok per gudang dari stock movement.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('inventory.stock-on-hand') }}">Lihat Stok</a>
                         </div>
                     </div>
 

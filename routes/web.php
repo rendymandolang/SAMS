@@ -6,6 +6,7 @@ use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
+use App\Http\Controllers\StockOnHandController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -47,5 +48,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/goods-receipts/from-po/{purchaseOrder}', [GoodsReceiptController::class, 'storeFromPurchaseOrder'])->name('goods-receipts.store-from-po');
     Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
     Route::post('/goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
+    Route::get('/inventory/stock-on-hand', StockOnHandController::class)->name('inventory.stock-on-hand');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
