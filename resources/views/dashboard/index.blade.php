@@ -115,6 +115,11 @@
                             <p class="muted" style="margin:6px 0 0;">Hitung fisik stok dan posting adjustment selisih.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
                         </div>
+                        <div class="quick-action">
+                            <strong>Mutasi Stok</strong>
+                            <p class="muted" style="margin:6px 0 0;">Laporan masuk/keluar stok lengkap dengan saldo berjalan.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.inventory.movements') }}">Buka Laporan</a>
+                        </div>
                     </div>
 
                     <div style="margin-top:22px;padding:18px;border-radius:18px;background:linear-gradient(145deg,#6259ca,#20c997);color:#fff;">

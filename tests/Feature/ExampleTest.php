@@ -735,4 +735,28 @@ class ExampleTest extends TestCase
         $stockResponse->assertOk();
         $stockResponse->assertSee('8,00');
     }
+
+    public function test_inventory_movement_report_shows_goods_receipt_and_stock_opname_adjustment(): void
+    {
+        $this->test_stock_opname_can_be_created_and_posted_as_stock_adjustment();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/inventory/movements?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+            'storage_location_id' => $location->id,
+            'item_id' => $item->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Laporan Mutasi Stok');
+        $response->assertSee('GR-');
+        $response->assertSee('SO-');
+        $response->assertSee('goods receipt');
+        $response->assertSee('stock opname adjustment');
+        $response->assertSee('8,00');
+    }
 }

@@ -51,6 +51,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Goods Receipt draft dari Purchase Order approved, posting GR, dan stock movement masuk gudang
 - Stock On Hand per gudang dari aggregate stock movement
 - Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
+- Laporan Mutasi Stok dengan filter tanggal, gudang, item, saldo awal, movement masuk/keluar, dan saldo berjalan
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget
@@ -97,7 +98,7 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 Urutan kerja berikutnya:
 
 1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Laporan inventory: mutasi stok, kartu stok, dan valuation.
+2. Print/PDF dokumen PR, PO, GR, Stock Opname, dan laporan.
 3. Role/permission yang lebih detail untuk tiap modul.
 4. Audit trail tampilan dan laporan budget.
 5. Asset register dan maintenance workflow.

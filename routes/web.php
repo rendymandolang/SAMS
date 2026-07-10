@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
+use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
@@ -55,5 +56,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
     Route::post('/stock-opnames/{stockOpname}/post', [StockOpnameController::class, 'post'])->name('stock-opnames.post');
+    Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

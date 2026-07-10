@@ -12,6 +12,7 @@
         <a class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}" href="{{ route('goods-receipts.index') }}"><span>Goods Receipt</span><span>&rsaquo;</span></a>
         <a class="nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.stock-on-hand') }}"><span>Stock On Hand</span><span>&rsaquo;</span></a>
         <a class="nav-link {{ request()->routeIs('stock-opnames.*') ? 'active' : '' }}" href="{{ route('stock-opnames.index') }}"><span>Stock Opname</span><span>&rsaquo;</span></a>
+        <a class="nav-link {{ request()->routeIs('reports.inventory.*') ? 'active' : '' }}" href="{{ route('reports.inventory.movements') }}"><span>Mutasi Stok</span><span>&rsaquo;</span></a>
         <a class="nav-link" href="#"><span>Budget Control</span><span>&rsaquo;</span></a>
     </nav>
 
