@@ -23,6 +23,25 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        $roleUsers = [
+            ['email' => 'purchasing@sams.local', 'name' => 'Purchasing User', 'role' => 'purchasing'],
+            ['email' => 'warehouse@sams.local', 'name' => 'Warehouse User', 'role' => 'warehouse'],
+            ['email' => 'finance@sams.local', 'name' => 'Finance User', 'role' => 'finance'],
+            ['email' => 'staff@sams.local', 'name' => 'Staff User', 'role' => 'staff'],
+        ];
+
+        foreach ($roleUsers as $roleUser) {
+            User::query()->updateOrCreate(
+                ['email' => $roleUser['email']],
+                [
+                    'name' => $roleUser['name'],
+                    'password' => 'password',
+                    'role' => $roleUser['role'],
+                    'is_active' => true,
+                ],
+            );
+        }
+
         DB::table('companies')->updateOrInsert(
             ['code' => 'SAMS'],
             [
@@ -97,6 +116,23 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => $now,
             ],
         );
+
+        User::query()
+            ->whereIn('email', collect($roleUsers)->pluck('email'))
+            ->get()
+            ->each(function (User $user) use ($company, $branch, $purchasing, $now) {
+                DB::table('company_user')->updateOrInsert(
+                    ['company_id' => $company->id, 'user_id' => $user->id],
+                    [
+                        'branch_id' => $branch->id,
+                        'department_id' => $purchasing->id,
+                        'is_default' => true,
+                        'is_active' => true,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                );
+            });
 
         $units = [
             'PCS' => ['name' => 'Pieces', 'decimal_places' => 0],

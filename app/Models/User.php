@@ -17,6 +17,16 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public function hasRole(string $role): bool
+    {
+        return $this->role === 'super_admin' || $this->role === $role;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->role === 'super_admin' || in_array($this->role, $roles, true);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

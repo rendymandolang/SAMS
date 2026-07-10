@@ -33,7 +33,9 @@
                         <h2 style="margin-bottom:6px;">Daftar {{ $config['title'] }}</h2>
                         <p class="muted" style="margin:0;">{{ $config['description'] }}</p>
                     </div>
-                    <a class="button inline" href="{{ route('master.create', $master) }}">+ Tambah</a>
+                    @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                        <a class="button inline" href="{{ route('master.create', $master) }}">+ Tambah</a>
+                    @endif
                 </div>
 
                 <div class="table-wrap">
@@ -61,14 +63,18 @@
                                     </td>
                                 @endforeach
                                 <td>
-                                    <div class="actions">
-                                        <a class="link-action" href="{{ route('master.edit', [$master, $row->id]) }}">Edit</a>
-                                        <form method="POST" action="{{ route('master.destroy', [$master, $row->id]) }}" onsubmit="return confirm('Hapus data ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="link-action danger" type="submit">Hapus</button>
-                                        </form>
-                                    </div>
+                                    @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                                        <div class="actions">
+                                            <a class="link-action" href="{{ route('master.edit', [$master, $row->id]) }}">Edit</a>
+                                            <form method="POST" action="{{ route('master.destroy', [$master, $row->id]) }}" onsubmit="return confirm('Hapus data ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="link-action danger" type="submit">Hapus</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="muted">View only</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

@@ -11,7 +11,9 @@
                     <h1>Stock Opname</h1>
                 </div>
 
-                <a class="button inline" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
+                @if (auth()->user()->hasAnyRole(['super_admin', 'warehouse']))
+                    <a class="button inline" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
+                @endif
             </header>
 
             @if (session('status'))

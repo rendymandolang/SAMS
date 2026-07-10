@@ -14,7 +14,7 @@
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('goods-receipts.index') }}">Kembali</a>
                     <a class="button secondary inline" href="{{ route('goods-receipts.print', $header->id) }}" target="_blank">Print GR</a>
-                    @if ($header->status === 'draft')
+                    @if ($header->status === 'draft' && auth()->user()->hasAnyRole(['super_admin', 'warehouse']))
                         <form method="POST" action="{{ route('goods-receipts.post', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Post GR</button>

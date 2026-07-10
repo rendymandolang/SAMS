@@ -14,19 +14,19 @@
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('purchase-orders.index') }}">Kembali</a>
                     <a class="button secondary inline" href="{{ route('purchase-orders.print', $header->id) }}" target="_blank">Print PO</a>
-                    @if ($header->status === 'draft')
+                    @if ($header->status === 'draft' && auth()->user()->hasAnyRole(['super_admin', 'purchasing']))
                         <form method="POST" action="{{ route('purchase-orders.submit', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Submit PO</button>
                         </form>
                     @endif
-                    @if ($header->status === 'submitted')
+                    @if ($header->status === 'submitted' && auth()->user()->hasAnyRole(['super_admin', 'finance']))
                         <form method="POST" action="{{ route('purchase-orders.approve', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Approve PO</button>
                         </form>
                     @endif
-                    @if ($header->status === 'approved' || $header->status === 'partial_received')
+                    @if (($header->status === 'approved' || $header->status === 'partial_received') && auth()->user()->hasAnyRole(['super_admin', 'warehouse']))
                         <a class="button inline" href="{{ route('goods-receipts.create-from-po', $header->id) }}">Buat GR</a>
                     @endif
                 </div>

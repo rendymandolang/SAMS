@@ -103,6 +103,23 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_staff_user_cannot_modify_master_data(): void
+    {
+        $this->seed();
+
+        $staff = User::query()->where('email', 'staff@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($staff)->post('/master/suppliers', [
+            'code' => 'SUP-DENIED',
+            'name' => 'Denied Supplier',
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('suppliers', [
+            'code' => 'SUP-DENIED',
+        ]);
+    }
+
     public function test_realistic_demo_master_data_is_seeded(): void
     {
         $this->seed();
@@ -322,6 +339,44 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('budget_lines', [
             'id' => $budgetLine->id,
             'committed_amount' => 145000,
+        ]);
+    }
+
+    public function test_staff_user_cannot_approve_purchase_request(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $staff = User::query()->where('email', 'staff@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+
+        $this->actingAs($admin)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PR staff tidak boleh approve',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR staff tidak boleh approve')
+            ->firstOrFail();
+
+        $this->actingAs($admin)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+
+        $response = $this->actingAs($staff)->post('/purchase-requests/'.$purchaseRequest->id.'/approve');
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('purchase_requests', [
+            'id' => $purchaseRequest->id,
+            'status' => 'submitted',
         ]);
     }
 

@@ -44,6 +44,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - MySQL database `sams`
 - Login/logout lokal
 - Role awal user (`super_admin`, `staff`) dan status aktif
+- Role/permission dasar untuk `super_admin`, `purchasing`, `warehouse`, `finance`, dan `staff`
 - Dashboard awal SAMS dengan sidebar modul
 - Seeder akun admin, company, branch, department, unit, supplier, gudang, kategori, dan item demo
 - Purchase Request draft, edit draft, detail, nomor dokumen otomatis, budget line, validasi sisa budget, submit, approve, dan reject awal
@@ -82,6 +83,13 @@ Buka aplikasi lokal, lalu login dengan:
 - Password: `password`
 
 Password ini hanya untuk development lokal dan wajib diganti sebelum staging/VPS.
+
+Seeder juga menyediakan user demo role:
+
+- `purchasing@sams.local` / `password`
+- `warehouse@sams.local` / `password`
+- `finance@sams.local` / `password`
+- `staff@sams.local` / `password`
 
 ## Demo Master Data
 
