@@ -1,0 +1,36 @@
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\PurchaseRequestController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/master', [MasterDataController::class, 'home'])->name('master.home');
+    Route::get('/master/{master}', [MasterDataController::class, 'index'])->name('master.index');
+    Route::get('/master/{master}/create', [MasterDataController::class, 'create'])->name('master.create');
+    Route::post('/master/{master}', [MasterDataController::class, 'store'])->name('master.store');
+    Route::get('/master/{master}/{id}/edit', [MasterDataController::class, 'edit'])->name('master.edit');
+    Route::put('/master/{master}/{id}', [MasterDataController::class, 'update'])->name('master.update');
+    Route::delete('/master/{master}/{id}', [MasterDataController::class, 'destroy'])->name('master.destroy');
+    Route::get('/purchase-requests', [PurchaseRequestController::class, 'index'])->name('purchase-requests.index');
+    Route::get('/purchase-requests/create', [PurchaseRequestController::class, 'create'])->name('purchase-requests.create');
+    Route::post('/purchase-requests', [PurchaseRequestController::class, 'store'])->name('purchase-requests.store');
+    Route::get('/purchase-requests/{purchaseRequest}/edit', [PurchaseRequestController::class, 'edit'])->name('purchase-requests.edit');
+    Route::put('/purchase-requests/{purchaseRequest}', [PurchaseRequestController::class, 'update'])->name('purchase-requests.update');
+    Route::get('/purchase-requests/{purchaseRequest}', [PurchaseRequestController::class, 'show'])->name('purchase-requests.show');
+    Route::post('/purchase-requests/{purchaseRequest}/submit', [PurchaseRequestController::class, 'submit'])->name('purchase-requests.submit');
+    Route::delete('/purchase-requests/{purchaseRequest}', [PurchaseRequestController::class, 'destroy'])->name('purchase-requests.destroy');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
