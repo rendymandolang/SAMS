@@ -124,6 +124,12 @@
                     </form>
                 @endif
             </section>
+
+            @include('partials.attachments', [
+                'attachmentType' => 'purchase_request',
+                'attachmentId' => $header->id,
+                'attachments' => $attachments,
+            ])
         </main>
     </div>
 @endsection

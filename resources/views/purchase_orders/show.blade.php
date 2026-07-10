@@ -109,6 +109,12 @@
                     </table>
                 </div>
             </section>
+
+            @include('partials.attachments', [
+                'attachmentType' => 'purchase_order',
+                'attachmentId' => $header->id,
+                'attachments' => $attachments,
+            ])
         </main>
     </div>
 @endsection

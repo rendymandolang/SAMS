@@ -67,6 +67,8 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Asset registration dari Goods Receipt posted untuk item bertipe asset, termasuk link balik ke asset card
 - Asset Maintenance work order untuk histori perawatan, biaya, status penyelesaian, update kondisi aset, dan print WO
 - Asset Maintenance History report dengan overdue, biaya, ranking asset, days open, control status, dan print landscape
+- Attachment dokumen untuk PR, PO, GR, Asset Register, dan Asset Maintenance
+- Executive dashboard visual dengan operational health snapshot untuk purchasing, budget, asset, dan maintenance
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget

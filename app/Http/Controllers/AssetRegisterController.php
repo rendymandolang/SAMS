@@ -193,8 +193,9 @@ class AssetRegisterController extends Controller
     public function show(int $asset): View
     {
         $assetRow = $this->findAsset($asset);
+        $attachments = AttachmentController::listFor('asset_register', (int) $assetRow->id);
 
-        return view('assets.show', ['asset' => $assetRow]);
+        return view('assets.show', ['asset' => $assetRow, 'attachments' => $attachments]);
     }
 
     public function print(int $asset): View

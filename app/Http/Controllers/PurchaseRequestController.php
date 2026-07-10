@@ -231,8 +231,9 @@ class PurchaseRequestController extends Controller
     {
         $header = $this->findPurchaseRequest($purchaseRequest);
         $items = $this->purchaseRequestItems((int) $header->id);
+        $attachments = AttachmentController::listFor('purchase_request', (int) $header->id);
 
-        return view('purchase_requests.show', compact('header', 'items'));
+        return view('purchase_requests.show', compact('header', 'items', 'attachments'));
     }
 
     public function print(int $purchaseRequest): View

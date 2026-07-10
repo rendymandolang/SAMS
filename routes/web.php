@@ -4,6 +4,7 @@ use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetMaintenanceReportController;
 use App\Http\Controllers\AssetRegisterController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BudgetControlController;
@@ -42,6 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/approvals', ApprovalCenterController::class)
         ->middleware('role:super_admin,finance')
         ->name('approvals.index');
+    Route::post('/attachments/{type}/{id}', [AttachmentController::class, 'store'])->name('attachments.store');
+    Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
     Route::get('/master', [MasterDataController::class, 'home'])->name('master.home');
     Route::get('/master/{master}', [MasterDataController::class, 'index'])->name('master.index');
     Route::middleware('role:super_admin,purchasing,warehouse')->group(function () {

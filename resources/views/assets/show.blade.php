@@ -90,6 +90,12 @@
                     </div>
                 </div>
             </section>
+
+            @include('partials.attachments', [
+                'attachmentType' => 'asset_register',
+                'attachmentId' => $asset->id,
+                'attachments' => $attachments,
+            ])
         </main>
     </div>
 @endsection

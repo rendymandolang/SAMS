@@ -108,6 +108,12 @@
                     </table>
                 </div>
             </section>
+
+            @include('partials.attachments', [
+                'attachmentType' => 'goods_receipt',
+                'attachmentId' => $header->id,
+                'attachments' => $attachments,
+            ])
         </main>
     </div>
 @endsection

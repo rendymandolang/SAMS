@@ -115,7 +115,10 @@ class AssetMaintenanceController extends Controller
 
     public function show(int $maintenance): View
     {
-        return view('asset_maintenances.show', ['maintenance' => $this->findMaintenance($maintenance)]);
+        $maintenanceRow = $this->findMaintenance($maintenance);
+        $attachments = AttachmentController::listFor('asset_maintenance', (int) $maintenanceRow->id);
+
+        return view('asset_maintenances.show', ['maintenance' => $maintenanceRow, 'attachments' => $attachments]);
     }
 
     public function complete(Request $request, int $maintenance): RedirectResponse

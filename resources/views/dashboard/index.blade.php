@@ -59,6 +59,51 @@
                     <div class="stat-value">Rp {{ number_format((float) $stats['stock_on_hand_value'], 0, ',', '.') }}</div>
                     <div class="muted">Stock movement posted</div>
                 </div>
+                <div class="card">
+                    <div class="muted">Asset</div>
+                    <div class="stat-value">{{ number_format($stats['assets']) }}</div>
+                    <div class="muted">Asset register</div>
+                </div>
+                <div class="card">
+                    <div class="muted">Maintenance</div>
+                    <div class="stat-value">{{ number_format($stats['open_maintenance']) }}</div>
+                    <div class="muted">Open / in progress</div>
+                </div>
+                <div class="card">
+                    <div class="muted">Pending Approval</div>
+                    <div class="stat-value">{{ number_format($stats['pending_approvals']) }}</div>
+                    <div class="muted">PR + PO submitted</div>
+                </div>
+            </section>
+
+            <section class="card" style="margin-top:18px;">
+                <div class="toolbar">
+                    <div>
+                        <p class="eyebrow">Executive Control</p>
+                        <h2 style="margin-bottom:6px;">Operational Health Snapshot</h2>
+                        <p class="muted" style="margin:0;">Ringkasan visual untuk melihat flow, budget, asset, dan maintenance secara cepat.</p>
+                    </div>
+                    <span class="badge">Retina dashboard</span>
+                </div>
+
+                <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+                    @foreach ($executive as $metric)
+                        @php
+                            $percent = $metric['total'] > 0 ? min(100, ((float) $metric['value'] / (float) $metric['total']) * 100) : 0;
+                        @endphp
+                        <div class="quick-action">
+                            <strong>{{ $metric['label'] }}</strong>
+                            <div style="display:flex;align-items:flex-end;gap:8px;margin-top:10px;">
+                                <span style="font-size:28px;font-weight:900;">{{ number_format($percent, 0) }}%</span>
+                                <span class="muted" style="margin-bottom:5px;">health</span>
+                            </div>
+                            <div style="height:10px;border-radius:999px;background:#eef2ff;overflow:hidden;margin:12px 0 8px;">
+                                <div style="height:10px;width:{{ $percent }}%;background:linear-gradient(90deg,var(--primary),var(--accent));"></div>
+                            </div>
+                            <p class="muted" style="margin:0;line-height:1.5;">{{ $metric['caption'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
             </section>
 
             <section class="grid content-grid">

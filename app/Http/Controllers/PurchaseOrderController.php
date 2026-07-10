@@ -135,8 +135,9 @@ class PurchaseOrderController extends Controller
     {
         $header = $this->findPurchaseOrder($purchaseOrder);
         $items = $this->purchaseOrderItems((int) $header->id);
+        $attachments = AttachmentController::listFor('purchase_order', (int) $header->id);
 
-        return view('purchase_orders.show', compact('header', 'items'));
+        return view('purchase_orders.show', compact('header', 'items', 'attachments'));
     }
 
     public function print(int $purchaseOrder): View

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -133,6 +135,22 @@ class ExampleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Supplier');
+    }
+
+    public function test_dashboard_shows_executive_control_snapshot(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('Operational Health Snapshot');
+        $response->assertSee('Purchasing Flow');
+        $response->assertSee('Budget Usage');
+        $response->assertSee('Asset Health');
+        $response->assertSee('Maintenance Closure');
     }
 
     public function test_authenticated_user_can_open_master_data_overview(): void
@@ -1063,6 +1081,51 @@ class ExampleTest extends TestCase
         $printResponse->assertSee($asset->asset_number);
         $printResponse->assertSee('Laptop Operations FO-01');
         $printResponse->assertSee('Diperiksa oleh');
+    }
+
+    public function test_attachment_can_be_uploaded_downloaded_and_deleted_for_asset(): void
+    {
+        Storage::fake('local');
+        $this->test_asset_register_can_create_and_show_asset();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $asset = DB::table('asset_registers')
+            ->where('asset_name', 'Laptop Operations FO-01')
+            ->firstOrFail();
+
+        $uploadResponse = $this->actingAs($user)->post('/attachments/asset_register/'.$asset->id, [
+            'attachment' => UploadedFile::fake()->create('invoice-asset.pdf', 120, 'application/pdf'),
+        ]);
+
+        $uploadResponse->assertRedirect('/assets/'.$asset->id);
+
+        $attachment = DB::table('attachments')
+            ->where('attachable_type', 'asset_register')
+            ->where('attachable_id', $asset->id)
+            ->firstOrFail();
+
+        Storage::disk('local')->assertExists($attachment->path);
+        $this->assertDatabaseHas('attachments', [
+            'id' => $attachment->id,
+            'original_name' => 'invoice-asset.pdf',
+        ]);
+
+        $showResponse = $this->actingAs($user)->get('/assets/'.$asset->id);
+
+        $showResponse->assertOk();
+        $showResponse->assertSee('Attachments');
+        $showResponse->assertSee('invoice-asset.pdf');
+
+        $downloadResponse = $this->actingAs($user)->get('/attachments/'.$attachment->id.'/download');
+
+        $downloadResponse->assertOk();
+
+        $deleteResponse = $this->actingAs($user)->delete('/attachments/'.$attachment->id);
+
+        $deleteResponse->assertRedirect('/assets/'.$asset->id);
+        $this->assertDatabaseMissing('attachments', [
+            'id' => $attachment->id,
+        ]);
     }
 
     public function test_asset_can_be_registered_from_posted_goods_receipt_item(): void

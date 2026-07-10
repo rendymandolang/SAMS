@@ -60,6 +60,12 @@
                     </form>
                 </section>
             @endif
+
+            @include('partials.attachments', [
+                'attachmentType' => 'asset_maintenance',
+                'attachmentId' => $maintenance->id,
+                'attachments' => $attachments,
+            ])
         </main>
     </div>
 @endsection

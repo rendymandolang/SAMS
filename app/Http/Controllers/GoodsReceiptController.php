@@ -135,8 +135,9 @@ class GoodsReceiptController extends Controller
     {
         $header = $this->findGoodsReceipt($goodsReceipt);
         $items = $this->goodsReceiptItems((int) $header->id);
+        $attachments = AttachmentController::listFor('goods_receipt', (int) $header->id);
 
-        return view('goods_receipts.show', compact('header', 'items'));
+        return view('goods_receipts.show', compact('header', 'items', 'attachments'));
     }
 
     public function print(int $goodsReceipt): View
