@@ -1031,6 +1031,43 @@ class ExampleTest extends TestCase
         $response->assertSee('100,0%');
     }
 
+    public function test_supplier_performance_report_shows_supplier_scorecard(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/purchasing/suppliers?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Supplier Performance');
+        $response->assertSee('Supplier Scorecard');
+        $response->assertSee('Bali Fresh Market');
+        $response->assertSee('100,0%');
+        $response->assertSee('excellent');
+    }
+
+    public function test_supplier_performance_print_page_can_be_rendered(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/purchasing/suppliers/print?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('SUPPLIER PERFORMANCE REPORT');
+        $response->assertSee('Bali Fresh Market');
+        $response->assertSee('100,0%');
+        $response->assertSee('excellent');
+    }
+
     public function test_stock_on_hand_page_shows_posted_stock_balance(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();

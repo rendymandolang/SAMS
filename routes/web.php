@@ -13,6 +13,7 @@ use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\PurchasingCycleReportController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
+use App\Http\Controllers\SupplierPerformanceReportController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -92,6 +93,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
         Route::get('/reports/purchasing/cycle', [PurchasingCycleReportController::class, 'index'])->name('reports.purchasing.cycle');
         Route::get('/reports/purchasing/cycle/print', [PurchasingCycleReportController::class, 'print'])->name('reports.purchasing.cycle.print');
+        Route::get('/reports/purchasing/suppliers', [SupplierPerformanceReportController::class, 'index'])->name('reports.purchasing.suppliers');
+        Route::get('/reports/purchasing/suppliers/print', [SupplierPerformanceReportController::class, 'print'])->name('reports.purchasing.suppliers.print');
     });
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
         Route::get('/budget-control', [BudgetControlController::class, 'index'])->name('budget-control.index');

@@ -127,6 +127,11 @@
                                 <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.purchasing.cycle') }}">Buka Report</a>
                             </div>
                             <div class="quick-action">
+                                <strong>Supplier Performance</strong>
+                                <p class="muted" style="margin:6px 0 0;">Scorecard supplier dari PO, penerimaan, reject rate, dan watch list.</p>
+                                <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.purchasing.suppliers') }}">Buka Scorecard</a>
+                            </div>
+                            <div class="quick-action">
                                 <strong>Budget Control</strong>
                                 <p class="muted" style="margin:6px 0 0;">Pantau allocated, committed, actual, remaining, dan status risiko budget.</p>
                                 <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('budget-control.index') }}">Buka Control</a>
