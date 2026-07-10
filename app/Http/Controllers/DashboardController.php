@@ -29,7 +29,7 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'Purchase Order',
-                'description' => 'Kontrol pesanan ke supplier dari PR approved. Draft PO dari PR sudah tersedia.',
+                'description' => 'Kontrol pesanan ke supplier dari PR approved. Draft, submit, dan approve PO sudah tersedia.',
                 'status' => 'Aktif',
             ],
             [

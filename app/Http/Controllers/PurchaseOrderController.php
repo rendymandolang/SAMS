@@ -132,6 +132,66 @@ class PurchaseOrderController extends Controller
 
     public function show(int $purchaseOrder): View
     {
+        $header = $this->findPurchaseOrder($purchaseOrder);
+
+        $items = DB::table('purchase_order_items')
+            ->join('items', 'items.id', '=', 'purchase_order_items.item_id')
+            ->join('units', 'units.id', '=', 'purchase_order_items.unit_id')
+            ->where('purchase_order_items.purchase_order_id', $header->id)
+            ->select(
+                'purchase_order_items.*',
+                'items.sku',
+                'items.name as item_name',
+                'units.code as unit_code',
+            )
+            ->orderBy('purchase_order_items.id')
+            ->get();
+
+        return view('purchase_orders.show', compact('header', 'items'));
+    }
+
+    public function submit(int $purchaseOrder): RedirectResponse
+    {
+        $header = $this->findPurchaseOrder($purchaseOrder);
+
+        if ($header->status !== 'draft') {
+            return redirect()
+                ->route('purchase-orders.show', $header->id)
+                ->with('status', 'Hanya Purchase Order draft yang bisa disubmit.');
+        }
+
+        DB::table('purchase_orders')->where('id', $header->id)->update([
+            'status' => 'submitted',
+            'updated_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('purchase-orders.show', $header->id)
+            ->with('status', 'Purchase Order berhasil disubmit.');
+    }
+
+    public function approve(int $purchaseOrder): RedirectResponse
+    {
+        $header = $this->findPurchaseOrder($purchaseOrder);
+
+        if ($header->status !== 'submitted') {
+            return redirect()
+                ->route('purchase-orders.show', $header->id)
+                ->with('status', 'Hanya Purchase Order submitted yang bisa di-approve.');
+        }
+
+        DB::table('purchase_orders')->where('id', $header->id)->update([
+            'status' => 'approved',
+            'updated_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('purchase-orders.show', $header->id)
+            ->with('status', 'Purchase Order berhasil di-approve.');
+    }
+
+    private function findPurchaseOrder(int $purchaseOrder): object
+    {
         $company = $this->company();
 
         $header = DB::table('purchase_orders')
@@ -153,20 +213,7 @@ class PurchaseOrderController extends Controller
 
         abort_unless($header, 404);
 
-        $items = DB::table('purchase_order_items')
-            ->join('items', 'items.id', '=', 'purchase_order_items.item_id')
-            ->join('units', 'units.id', '=', 'purchase_order_items.unit_id')
-            ->where('purchase_order_items.purchase_order_id', $header->id)
-            ->select(
-                'purchase_order_items.*',
-                'items.sku',
-                'items.name as item_name',
-                'units.code as unit_code',
-            )
-            ->orderBy('purchase_order_items.id')
-            ->get();
-
-        return view('purchase_orders.show', compact('header', 'items'));
+        return $header;
     }
 
     private function findApprovedPurchaseRequest(int $id): object

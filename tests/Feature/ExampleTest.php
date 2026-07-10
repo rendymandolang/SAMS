@@ -512,4 +512,59 @@ class ExampleTest extends TestCase
             'status' => 'converted_to_po',
         ]);
     }
+
+    public function test_purchase_order_can_be_submitted_and_approved(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+        $supplier = DB::table('suppliers')->where('code', 'SUP-FOOD-01')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'PO approval flow',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PO approval flow')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/approve');
+        $this->actingAs($user)->post('/purchase-orders/from-pr/'.$purchaseRequest->id, [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->format('Y-m-d'),
+        ]);
+
+        $purchaseOrder = DB::table('purchase_orders')
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->firstOrFail();
+
+        $submitResponse = $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/submit');
+
+        $submitResponse->assertRedirect('/purchase-orders/'.$purchaseOrder->id);
+        $this->assertDatabaseHas('purchase_orders', [
+            'id' => $purchaseOrder->id,
+            'status' => 'submitted',
+        ]);
+
+        $approveResponse = $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/approve');
+
+        $approveResponse->assertRedirect('/purchase-orders/'.$purchaseOrder->id);
+        $this->assertDatabaseHas('purchase_orders', [
+            'id' => $purchaseOrder->id,
+            'status' => 'approved',
+        ]);
+    }
 }

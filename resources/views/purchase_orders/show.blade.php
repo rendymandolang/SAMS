@@ -11,7 +11,21 @@
                     <h1>{{ $header->document_number }}</h1>
                 </div>
 
-                <a class="button secondary inline" href="{{ route('purchase-orders.index') }}">Kembali</a>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <a class="button secondary inline" href="{{ route('purchase-orders.index') }}">Kembali</a>
+                    @if ($header->status === 'draft')
+                        <form method="POST" action="{{ route('purchase-orders.submit', $header->id) }}">
+                            @csrf
+                            <button class="button inline" type="submit">Submit PO</button>
+                        </form>
+                    @endif
+                    @if ($header->status === 'submitted')
+                        <form method="POST" action="{{ route('purchase-orders.approve', $header->id) }}">
+                            @csrf
+                            <button class="button inline" type="submit">Approve PO</button>
+                        </form>
+                    @endif
+                </div>
             </header>
 
             @if (session('status'))
