@@ -187,6 +187,8 @@ class GoodsReceiptController extends Controller
                     ->increment('received_quantity', (float) $item->accepted_quantity, ['updated_at' => $now]);
 
                 if ((float) $item->accepted_quantity > 0) {
+                    $this->actualizeBudgetLine($item, $now);
+
                     DB::table('stock_movements')->insert([
                         'company_id' => $header->company_id,
                         'branch_id' => $header->branch_id,
@@ -221,6 +223,48 @@ class GoodsReceiptController extends Controller
         return redirect()
             ->route('goods-receipts.show', $header->id)
             ->with('status', 'Goods Receipt berhasil diposting dan stok masuk gudang.');
+    }
+
+    private function actualizeBudgetLine(object $goodsReceiptItem, $now): void
+    {
+        $purchaseOrderItem = DB::table('purchase_order_items')
+            ->where('id', $goodsReceiptItem->purchase_order_item_id)
+            ->first();
+
+        if (! $purchaseOrderItem?->purchase_request_item_id) {
+            return;
+        }
+
+        $purchaseRequestItem = DB::table('purchase_request_items')
+            ->where('id', $purchaseOrderItem->purchase_request_item_id)
+            ->first();
+
+        if (! $purchaseRequestItem?->budget_line_id) {
+            return;
+        }
+
+        $actualAmount = (float) $goodsReceiptItem->accepted_quantity * (float) $goodsReceiptItem->unit_cost;
+
+        if ($actualAmount <= 0) {
+            return;
+        }
+
+        $budgetLine = DB::table('budget_lines')
+            ->where('id', $purchaseRequestItem->budget_line_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $budgetLine) {
+            return;
+        }
+
+        DB::table('budget_lines')
+            ->where('id', $budgetLine->id)
+            ->update([
+                'committed_amount' => max(0, (float) $budgetLine->committed_amount - $actualAmount),
+                'actual_amount' => (float) $budgetLine->actual_amount + $actualAmount,
+                'updated_at' => $now,
+            ]);
     }
 
     private function validatedLines(array $inputLines, int $purchaseOrderId)

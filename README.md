@@ -58,6 +58,8 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
 - Print/Save PDF Stock Opname dengan ringkasan selisih, item, nilai variance, dan area tanda tangan
 - Laporan Mutasi Stok dengan filter tanggal, gudang, item, saldo awal, movement masuk/keluar, dan saldo berjalan
+- Budget Control report dengan allocated, committed, actual, remaining, status risiko budget, dan print landscape
+- Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget
@@ -111,9 +113,9 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 Urutan kerja berikutnya:
 
 1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Print/PDF laporan inventory.
+2. Print/PDF laporan inventory dan budget control.
 3. Role/permission yang lebih detail untuk tiap modul.
-4. Audit trail tampilan dan laporan budget.
+4. Audit trail lanjutan dan AI reporting.
 5. Asset register dan maintenance workflow.
 
 ## VPS Migration Strategy

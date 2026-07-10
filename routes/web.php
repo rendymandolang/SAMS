@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\BudgetControlController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryMovementReportController;
@@ -83,5 +84,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-opnames/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock-opnames.print');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
     Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');
+    Route::middleware('role:super_admin,finance,purchasing')->group(function () {
+        Route::get('/budget-control', [BudgetControlController::class, 'index'])->name('budget-control.index');
+        Route::get('/budget-control/print', [BudgetControlController::class, 'print'])->name('budget-control.print');
+    });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

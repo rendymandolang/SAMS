@@ -438,6 +438,36 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_budget_control_page_shows_committed_budget(): void
+    {
+        $this->test_purchase_request_submit_commits_budget();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/budget-control');
+
+        $response->assertOk();
+        $response->assertSee('Budget Control');
+        $response->assertSee('PUR-FNB');
+        $response->assertSee('Committed');
+        $response->assertSee('Rp 145.000');
+    }
+
+    public function test_budget_control_print_page_can_be_rendered(): void
+    {
+        $this->test_purchase_request_submit_commits_budget();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/budget-control/print');
+
+        $response->assertOk();
+        $response->assertSee('BUDGET CONTROL REPORT');
+        $response->assertSee('PUR-FNB');
+        $response->assertSee('Allocated');
+        $response->assertSee('Remaining');
+    }
+
     public function test_staff_user_cannot_approve_purchase_request(): void
     {
         $this->seed();
@@ -770,6 +800,7 @@ class ExampleTest extends TestCase
         $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
         $supplier = DB::table('suppliers')->where('code', 'SUP-FOOD-01')->firstOrFail();
         $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+        $budgetLine = DB::table('budget_lines')->where('account_code', 'PUR-FNB')->firstOrFail();
 
         $this->actingAs($user)->post('/purchase-requests', [
             'department_id' => $department->id,
@@ -779,6 +810,7 @@ class ExampleTest extends TestCase
             'lines' => [
                 [
                     'item_id' => $item->id,
+                    'budget_line_id' => $budgetLine->id,
                     'quantity' => 10,
                     'estimated_unit_price' => 14500,
                 ],
@@ -847,6 +879,11 @@ class ExampleTest extends TestCase
             'source_id' => $goodsReceipt->id,
             'item_id' => $item->id,
             'quantity' => 10,
+        ]);
+        $this->assertDatabaseHas('budget_lines', [
+            'id' => $budgetLine->id,
+            'committed_amount' => 0,
+            'actual_amount' => 145000,
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'event' => 'goods_receipt_posted',
