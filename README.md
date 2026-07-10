@@ -63,6 +63,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Budget Control report dengan allocated, committed, actual, remaining, status risiko budget, dan print landscape
 - Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
 - Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol
+- Asset Register awal untuk mencatat aset, lokasi, departemen, kondisi, nilai perolehan, audit, dan print asset card
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget

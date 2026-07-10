@@ -992,6 +992,79 @@ class ExampleTest extends TestCase
         $response->assertSee('Diketahui oleh');
     }
 
+    public function test_asset_register_can_create_and_show_asset(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-LAPTOP-OPS')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'OPS')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+
+        $response = $this->actingAs($user)->post('/assets', [
+            'item_id' => $item->id,
+            'department_id' => $department->id,
+            'storage_location_id' => $location->id,
+            'asset_name' => 'Laptop Operations FO-01',
+            'asset_number' => '',
+            'serial_number' => 'SN-LAP-0001',
+            'acquisition_date' => now()->format('Y-m-d'),
+            'acquisition_cost' => 9500000,
+            'condition' => 'good',
+            'status' => 'active',
+            'notes' => 'Asset sample untuk front office.',
+        ]);
+
+        $asset = DB::table('asset_registers')
+            ->where('asset_name', 'Laptop Operations FO-01')
+            ->firstOrFail();
+
+        $response->assertRedirect('/assets/'.$asset->id);
+
+        $this->assertDatabaseHas('asset_registers', [
+            'id' => $asset->id,
+            'asset_number' => $asset->asset_number,
+            'serial_number' => 'SN-LAP-0001',
+            'condition' => 'good',
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'asset_created',
+            'auditable_type' => 'asset_register',
+            'auditable_id' => $asset->id,
+        ]);
+
+        $showResponse = $this->actingAs($user)->get('/assets/'.$asset->id);
+
+        $showResponse->assertOk();
+        $showResponse->assertSee('Laptop Operations FO-01');
+        $showResponse->assertSee($asset->asset_number);
+        $showResponse->assertSee('SN-LAP-0001');
+    }
+
+    public function test_asset_register_index_and_print_can_be_rendered(): void
+    {
+        $this->test_asset_register_can_create_and_show_asset();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $asset = DB::table('asset_registers')->firstOrFail();
+
+        $indexResponse = $this->actingAs($user)->get('/assets');
+
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Asset Register');
+        $indexResponse->assertSee('Laptop Operations FO-01');
+        $indexResponse->assertSee('Acquisition Value');
+
+        $printResponse = $this->actingAs($user)->get('/assets/'.$asset->id.'/print');
+
+        $printResponse->assertOk();
+        $printResponse->assertSee('ASSET CARD');
+        $printResponse->assertSee($asset->asset_number);
+        $printResponse->assertSee('Laptop Operations FO-01');
+        $printResponse->assertSee('Diperiksa oleh');
+    }
+
     public function test_purchasing_cycle_report_shows_pr_po_and_gr_progress(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();

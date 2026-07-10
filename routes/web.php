@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApprovalCenterController;
+use App\Http\Controllers\AssetRegisterController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BudgetControlController;
@@ -80,6 +81,13 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/goods-receipts/{goodsReceipt}/print', [GoodsReceiptController::class, 'print'])->name('goods-receipts.print');
     Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
+    Route::get('/assets', [AssetRegisterController::class, 'index'])->name('assets.index');
+    Route::middleware('role:super_admin,purchasing,warehouse')->group(function () {
+        Route::get('/assets/create', [AssetRegisterController::class, 'create'])->name('assets.create');
+        Route::post('/assets', [AssetRegisterController::class, 'store'])->name('assets.store');
+    });
+    Route::get('/assets/{asset}/print', [AssetRegisterController::class, 'print'])->name('assets.print');
+    Route::get('/assets/{asset}', [AssetRegisterController::class, 'show'])->name('assets.show');
     Route::get('/inventory/stock-on-hand', StockOnHandController::class)->name('inventory.stock-on-hand');
     Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
     Route::middleware('role:super_admin,warehouse')->group(function () {

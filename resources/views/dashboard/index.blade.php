@@ -106,6 +106,11 @@
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-orders.index') }}">Buka PO</a>
                         </div>
                         <div class="quick-action">
+                            <strong>Asset Register</strong>
+                            <p class="muted" style="margin:6px 0 0;">Daftar aset, lokasi, kondisi, nilai perolehan, dan kartu print.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('assets.index') }}">Buka Asset</a>
+                        </div>
+                        <div class="quick-action">
                             <strong>Stock On Hand</strong>
                             <p class="muted" style="margin:6px 0 0;">Saldo stok per gudang dari stock movement.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('inventory.stock-on-hand') }}">Lihat Stok</a>
