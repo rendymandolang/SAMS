@@ -7,6 +7,7 @@ use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\StockOnHandController;
+use App\Http\Controllers\StockOpnameController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -49,5 +50,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
     Route::post('/goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
     Route::get('/inventory/stock-on-hand', StockOnHandController::class)->name('inventory.stock-on-hand');
+    Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
+    Route::get('/stock-opnames/create', [StockOpnameController::class, 'create'])->name('stock-opnames.create');
+    Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
+    Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
+    Route::post('/stock-opnames/{stockOpname}/post', [StockOpnameController::class, 'post'])->name('stock-opnames.post');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

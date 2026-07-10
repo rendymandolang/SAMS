@@ -50,12 +50,13 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Purchase Order draft dari Purchase Request approved, submit, dan approve awal
 - Goods Receipt draft dari Purchase Order approved, posting GR, dan stock movement masuk gudang
 - Stock On Hand per gudang dari aggregate stock movement
+- Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget
 - Purchase Request dan Purchase Order
 - Goods Receipt dan stock ledger
-- Stock Opname
+- Stock Opname dan adjustment ledger
 - Approval workflow
 - Attachments dan audit log
 
@@ -96,10 +97,10 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 Urutan kerja berikutnya:
 
 1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Stock opname.
-3. Adjustment stock movement.
-4. Role/permission yang lebih detail untuk tiap modul.
-5. Audit trail tampilan dan laporan budget.
+2. Laporan inventory: mutasi stok, kartu stok, dan valuation.
+3. Role/permission yang lebih detail untuk tiap modul.
+4. Audit trail tampilan dan laporan budget.
+5. Asset register dan maintenance workflow.
 
 ## VPS Migration Strategy
 

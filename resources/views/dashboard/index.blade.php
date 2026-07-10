@@ -50,6 +50,11 @@
                     <div class="muted">Penerimaan barang</div>
                 </div>
                 <div class="card">
+                    <div class="muted">Stock Opname</div>
+                    <div class="stat-value">{{ number_format($stats['stock_opnames']) }}</div>
+                    <div class="muted">Hasil hitung fisik</div>
+                </div>
+                <div class="card">
                     <div class="muted">Nilai Stok</div>
                     <div class="stat-value">Rp {{ number_format((float) $stats['stock_on_hand_value'], 0, ',', '.') }}</div>
                     <div class="muted">Stock movement posted</div>
@@ -104,6 +109,11 @@
                             <strong>Stock On Hand</strong>
                             <p class="muted" style="margin:6px 0 0;">Saldo stok per gudang dari stock movement.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('inventory.stock-on-hand') }}">Lihat Stok</a>
+                        </div>
+                        <div class="quick-action">
+                            <strong>Stock Opname</strong>
+                            <p class="muted" style="margin:6px 0 0;">Hitung fisik stok dan posting adjustment selisih.</p>
+                            <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
                         </div>
                     </div>
 

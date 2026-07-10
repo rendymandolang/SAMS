@@ -670,4 +670,69 @@ class ExampleTest extends TestCase
         $response->assertSee('ITM-RICE-01');
         $response->assertSee('MAIN-WH');
     }
+
+    public function test_stock_opname_can_be_created_and_posted_as_stock_adjustment(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+
+        $createResponse = $this->actingAs($user)->get('/stock-opnames/create?storage_location_id='.$location->id);
+
+        $createResponse->assertOk();
+        $createResponse->assertSee('Buat Stock Opname');
+        $createResponse->assertSee('ITM-RICE-01');
+
+        $storeResponse = $this->actingAs($user)->post('/stock-opnames', [
+            'storage_location_id' => $location->id,
+            'count_date' => now()->format('Y-m-d'),
+            'notes' => 'Opname test',
+            'items' => [
+                [
+                    'item_id' => $item->id,
+                    'counted_quantity' => 8,
+                    'notes' => 'Selisih hitung fisik',
+                ],
+            ],
+        ]);
+
+        $stockOpname = DB::table('stock_opnames')
+            ->where('notes', 'Opname test')
+            ->firstOrFail();
+
+        $storeResponse->assertRedirect('/stock-opnames/'.$stockOpname->id);
+        $this->assertDatabaseHas('stock_opnames', [
+            'id' => $stockOpname->id,
+            'status' => 'draft',
+        ]);
+        $this->assertDatabaseHas('stock_opname_items', [
+            'stock_opname_id' => $stockOpname->id,
+            'item_id' => $item->id,
+            'system_quantity' => 10,
+            'counted_quantity' => 8,
+            'variance_quantity' => -2,
+        ]);
+
+        $postResponse = $this->actingAs($user)->post('/stock-opnames/'.$stockOpname->id.'/post');
+
+        $postResponse->assertRedirect('/stock-opnames/'.$stockOpname->id);
+        $this->assertDatabaseHas('stock_opnames', [
+            'id' => $stockOpname->id,
+            'status' => 'posted',
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'source_type' => 'stock_opname',
+            'source_id' => $stockOpname->id,
+            'item_id' => $item->id,
+            'quantity' => -2,
+            'movement_type' => 'stock_opname_adjustment',
+        ]);
+
+        $stockResponse = $this->actingAs($user)->get('/inventory/stock-on-hand');
+
+        $stockResponse->assertOk();
+        $stockResponse->assertSee('8,00');
+    }
 }
