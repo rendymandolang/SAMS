@@ -65,6 +65,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol
 - Asset Register awal untuk mencatat aset, lokasi, departemen, kondisi, nilai perolehan, audit, dan print asset card
 - Asset registration dari Goods Receipt posted untuk item bertipe asset, termasuk link balik ke asset card
+- Asset Maintenance work order untuk histori perawatan, biaya, status penyelesaian, update kondisi aset, dan print WO
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget

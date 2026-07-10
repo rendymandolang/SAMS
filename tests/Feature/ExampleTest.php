@@ -1173,6 +1173,87 @@ class ExampleTest extends TestCase
         $goodsReceiptResponse->assertSee('ITM-LAPTOP-OPS');
     }
 
+    public function test_asset_maintenance_can_be_created_completed_and_printed(): void
+    {
+        $this->test_asset_register_can_create_and_show_asset();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $asset = DB::table('asset_registers')
+            ->where('asset_name', 'Laptop Operations FO-01')
+            ->firstOrFail();
+
+        $createResponse = $this->actingAs($user)->get('/assets/'.$asset->id.'/maintenances/create');
+
+        $createResponse->assertOk();
+        $createResponse->assertSee('Buat Work Order');
+        $createResponse->assertSee($asset->asset_number);
+
+        $storeResponse = $this->actingAs($user)->post('/assets/'.$asset->id.'/maintenances', [
+            'maintenance_type' => 'corrective',
+            'priority' => 'high',
+            'request_date' => now()->format('Y-m-d'),
+            'scheduled_date' => now()->addDay()->format('Y-m-d'),
+            'vendor_name' => 'Bali Tech Service',
+            'estimated_cost' => 450000,
+            'issue_description' => 'Laptop lambat dan perlu pengecekan SSD.',
+        ]);
+
+        $maintenance = DB::table('asset_maintenances')
+            ->where('asset_register_id', $asset->id)
+            ->firstOrFail();
+
+        $storeResponse->assertRedirect('/asset-maintenances/'.$maintenance->id);
+        $this->assertDatabaseHas('asset_maintenances', [
+            'id' => $maintenance->id,
+            'status' => 'open',
+            'priority' => 'high',
+            'vendor_name' => 'Bali Tech Service',
+        ]);
+        $this->assertDatabaseHas('asset_registers', [
+            'id' => $asset->id,
+            'status' => 'maintenance',
+        ]);
+
+        $showResponse = $this->actingAs($user)->get('/asset-maintenances/'.$maintenance->id);
+
+        $showResponse->assertOk();
+        $showResponse->assertSee('Maintenance Work Order');
+        $showResponse->assertSee('Laptop lambat');
+
+        $completeResponse = $this->actingAs($user)->post('/asset-maintenances/'.$maintenance->id.'/complete', [
+            'completed_date' => now()->format('Y-m-d'),
+            'actual_cost' => 425000,
+            'resolution_notes' => 'SSD dicek dan sistem dibersihkan.',
+            'asset_condition' => 'good',
+            'asset_status' => 'active',
+        ]);
+
+        $completeResponse->assertRedirect('/asset-maintenances/'.$maintenance->id);
+        $this->assertDatabaseHas('asset_maintenances', [
+            'id' => $maintenance->id,
+            'status' => 'completed',
+            'actual_cost' => 425000,
+        ]);
+        $this->assertDatabaseHas('asset_registers', [
+            'id' => $asset->id,
+            'condition' => 'good',
+            'status' => 'active',
+        ]);
+
+        $indexResponse = $this->actingAs($user)->get('/asset-maintenances');
+
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Asset Maintenance');
+        $indexResponse->assertSee($maintenance->document_number);
+
+        $printResponse = $this->actingAs($user)->get('/asset-maintenances/'.$maintenance->id.'/print');
+
+        $printResponse->assertOk();
+        $printResponse->assertSee('MAINTENANCE WORK ORDER');
+        $printResponse->assertSee($maintenance->document_number);
+        $printResponse->assertSee('Bali Tech Service');
+    }
+
     public function test_purchasing_cycle_report_shows_pr_po_and_gr_progress(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
