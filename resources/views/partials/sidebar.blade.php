@@ -9,7 +9,7 @@
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><span>Dashboard</span><span>&bull;</span></a>
         <a class="nav-link {{ request()->routeIs('purchase-requests.*') ? 'active' : '' }}" href="{{ route('purchase-requests.index') }}"><span>Purchase Request</span><span>&rsaquo;</span></a>
         <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><span>Purchase Order</span><span>&rsaquo;</span></a>
-        <a class="nav-link" href="#"><span>Inventory</span><span>&rsaquo;</span></a>
+        <a class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}" href="{{ route('goods-receipts.index') }}"><span>Goods Receipt</span><span>&rsaquo;</span></a>
         <a class="nav-link" href="#"><span>Budget Control</span><span>&rsaquo;</span></a>
     </nav>
 

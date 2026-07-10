@@ -44,6 +44,11 @@
                     <div class="stat-value">{{ number_format($stats['suppliers']) }}</div>
                     <div class="muted">Vendor terdaftar</div>
                 </div>
+                <div class="card">
+                    <div class="muted">Goods Receipt</div>
+                    <div class="stat-value">{{ number_format($stats['goods_receipts']) }}</div>
+                    <div class="muted">Penerimaan barang</div>
+                </div>
             </section>
 
             <section class="grid content-grid">

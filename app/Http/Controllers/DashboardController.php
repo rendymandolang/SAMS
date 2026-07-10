@@ -15,6 +15,7 @@ class DashboardController extends Controller
             'items' => DB::table('items')->whereNull('deleted_at')->count(),
             'suppliers' => DB::table('suppliers')->whereNull('deleted_at')->count(),
             'stock_movements' => DB::table('stock_movements')->count(),
+            'goods_receipts' => DB::table('goods_receipts')->count(),
             'budgets' => DB::table('budgets')->count(),
         ];
 
@@ -34,8 +35,8 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'Inventory',
-                'description' => 'Master item, satuan, gudang, dan pergerakan stok.',
-                'status' => 'Fondasi siap',
+                'description' => 'Master item, gudang, Goods Receipt, dan stock movement masuk sudah tersedia.',
+                'status' => 'Aktif',
             ],
             [
                 'name' => 'Budget Control',

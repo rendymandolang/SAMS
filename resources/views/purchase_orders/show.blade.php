@@ -25,6 +25,9 @@
                             <button class="button inline" type="submit">Approve PO</button>
                         </form>
                     @endif
+                    @if ($header->status === 'approved' || $header->status === 'partial_received')
+                        <a class="button inline" href="{{ route('goods-receipts.create-from-po', $header->id) }}">Buat GR</a>
+                    @endif
                 </div>
             </header>
 

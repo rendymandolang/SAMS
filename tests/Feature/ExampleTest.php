@@ -567,4 +567,93 @@ class ExampleTest extends TestCase
             'status' => 'approved',
         ]);
     }
+
+    public function test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $department = DB::table('departments')->where('code', 'PUR')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+        $supplier = DB::table('suppliers')->where('code', 'SUP-FOOD-01')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests', [
+            'department_id' => $department->id,
+            'request_date' => now()->format('Y-m-d'),
+            'priority' => 'normal',
+            'purpose' => 'GR flow',
+            'lines' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 10,
+                    'estimated_unit_price' => 14500,
+                ],
+            ],
+        ]);
+
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'GR flow')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/submit');
+        $this->actingAs($user)->post('/purchase-requests/'.$purchaseRequest->id.'/approve');
+        $this->actingAs($user)->post('/purchase-orders/from-pr/'.$purchaseRequest->id, [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->format('Y-m-d'),
+        ]);
+
+        $purchaseOrder = DB::table('purchase_orders')
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/submit');
+        $this->actingAs($user)->post('/purchase-orders/'.$purchaseOrder->id.'/approve');
+
+        $purchaseOrderItem = DB::table('purchase_order_items')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->post('/goods-receipts/from-po/'.$purchaseOrder->id, [
+            'storage_location_id' => $location->id,
+            'received_at' => now()->format('Y-m-d\TH:i'),
+            'supplier_delivery_number' => 'SJ-TEST-001',
+            'notes' => 'GR from test',
+            'lines' => [
+                [
+                    'purchase_order_item_id' => $purchaseOrderItem->id,
+                    'accepted_quantity' => 10,
+                    'rejected_quantity' => 0,
+                ],
+            ],
+        ]);
+
+        $goodsReceipt = DB::table('goods_receipts')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->firstOrFail();
+
+        $response->assertRedirect('/goods-receipts/'.$goodsReceipt->id);
+
+        $postResponse = $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/post');
+
+        $postResponse->assertRedirect('/goods-receipts/'.$goodsReceipt->id);
+        $this->assertDatabaseHas('goods_receipts', [
+            'id' => $goodsReceipt->id,
+            'status' => 'posted',
+        ]);
+        $this->assertDatabaseHas('purchase_order_items', [
+            'id' => $purchaseOrderItem->id,
+            'received_quantity' => 10,
+        ]);
+        $this->assertDatabaseHas('purchase_orders', [
+            'id' => $purchaseOrder->id,
+            'status' => 'received',
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'source_type' => 'goods_receipt',
+            'source_id' => $goodsReceipt->id,
+            'item_id' => $item->id,
+            'quantity' => 10,
+        ]);
+    }
 }
