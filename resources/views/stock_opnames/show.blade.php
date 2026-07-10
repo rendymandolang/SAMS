@@ -13,6 +13,7 @@
 
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('stock-opnames.index') }}">Kembali</a>
+                    <a class="button secondary inline" href="{{ route('stock-opnames.print', $header->id) }}" target="_blank">Print Opname</a>
                     @if ($header->status === 'draft')
                         <form method="POST" action="{{ route('stock-opnames.post', $header->id) }}">
                             @csrf

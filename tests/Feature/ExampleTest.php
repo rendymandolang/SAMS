@@ -797,6 +797,26 @@ class ExampleTest extends TestCase
         $stockResponse->assertSee('8,00');
     }
 
+    public function test_stock_opname_print_page_can_be_rendered(): void
+    {
+        $this->test_stock_opname_can_be_created_and_posted_as_stock_adjustment();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $stockOpname = DB::table('stock_opnames')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/stock-opnames/'.$stockOpname->id.'/print');
+
+        $response->assertOk();
+        $response->assertSee('STOCK OPNAME');
+        $response->assertSee($stockOpname->document_number);
+        $response->assertSee('MAIN-WH');
+        $response->assertSee('ITM-RICE-01');
+        $response->assertSee('Selisih Minus');
+        $response->assertSee('Dihitung oleh');
+        $response->assertSee('Diperiksa oleh');
+        $response->assertSee('Disetujui oleh');
+    }
+
     public function test_inventory_movement_report_shows_goods_receipt_and_stock_opname_adjustment(): void
     {
         $this->test_stock_opname_can_be_created_and_posted_as_stock_adjustment();

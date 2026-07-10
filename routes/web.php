@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
     Route::get('/stock-opnames/create', [StockOpnameController::class, 'create'])->name('stock-opnames.create');
     Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
+    Route::get('/stock-opnames/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock-opnames.print');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
     Route::post('/stock-opnames/{stockOpname}/post', [StockOpnameController::class, 'post'])->name('stock-opnames.post');
     Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');

@@ -121,11 +121,29 @@ class StockOpnameController extends Controller
     public function show(int $stockOpname): View
     {
         $header = $this->findStockOpname($stockOpname);
+        $items = $this->stockOpnameItems((int) $header->id);
+        $summary = $this->summary($items);
 
-        $items = DB::table('stock_opname_items')
+        return view('stock_opnames.show', compact('header', 'items', 'summary'));
+    }
+
+    public function print(int $stockOpname): View
+    {
+        $header = $this->findStockOpname($stockOpname);
+        $items = $this->stockOpnameItems((int) $header->id);
+        $summary = $this->summary($items);
+        $company = $this->company();
+        $branch = DB::table('branches')->where('id', $header->branch_id)->first();
+
+        return view('stock_opnames.print', compact('header', 'items', 'summary', 'company', 'branch'));
+    }
+
+    private function stockOpnameItems(int $stockOpnameId)
+    {
+        return DB::table('stock_opname_items')
             ->join('items', 'items.id', '=', 'stock_opname_items.item_id')
             ->join('units', 'units.id', '=', 'items.base_unit_id')
-            ->where('stock_opname_items.stock_opname_id', $header->id)
+            ->where('stock_opname_items.stock_opname_id', $stockOpnameId)
             ->select(
                 'stock_opname_items.*',
                 'items.sku',
@@ -134,13 +152,16 @@ class StockOpnameController extends Controller
             )
             ->orderBy('items.name')
             ->get();
+    }
 
-        $summary = [
+    private function summary($items): array
+    {
+        return [
             'line_count' => $items->count(),
             'variance_value' => $items->sum(fn (object $item) => (float) $item->variance_quantity * (float) $item->unit_cost),
+            'positive_variance' => $items->sum(fn (object $item) => max(0, (float) $item->variance_quantity)),
+            'negative_variance' => $items->sum(fn (object $item) => abs(min(0, (float) $item->variance_quantity))),
         ];
-
-        return view('stock_opnames.show', compact('header', 'items', 'summary'));
     }
 
     public function post(int $stockOpname): RedirectResponse
