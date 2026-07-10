@@ -229,12 +229,28 @@ class PurchaseRequestController extends Controller
     public function show(int $purchaseRequest): View
     {
         $header = $this->findPurchaseRequest($purchaseRequest);
+        $items = $this->purchaseRequestItems((int) $header->id);
 
-        $items = DB::table('purchase_request_items')
+        return view('purchase_requests.show', compact('header', 'items'));
+    }
+
+    public function print(int $purchaseRequest): View
+    {
+        $header = $this->findPurchaseRequest($purchaseRequest);
+        $items = $this->purchaseRequestItems((int) $header->id);
+        $company = $this->company();
+        $branch = DB::table('branches')->where('id', $header->branch_id)->first();
+
+        return view('purchase_requests.print', compact('header', 'items', 'company', 'branch'));
+    }
+
+    private function purchaseRequestItems(int $purchaseRequestId)
+    {
+        return DB::table('purchase_request_items')
             ->join('items', 'items.id', '=', 'purchase_request_items.item_id')
             ->join('units', 'units.id', '=', 'purchase_request_items.unit_id')
             ->leftJoin('budget_lines', 'budget_lines.id', '=', 'purchase_request_items.budget_line_id')
-            ->where('purchase_request_items.purchase_request_id', $header->id)
+            ->where('purchase_request_items.purchase_request_id', $purchaseRequestId)
             ->select(
                 'purchase_request_items.*',
                 'items.sku',
@@ -245,8 +261,6 @@ class PurchaseRequestController extends Controller
             )
             ->orderBy('purchase_request_items.id')
             ->get();
-
-        return view('purchase_requests.show', compact('header', 'items'));
     }
 
     public function submit(int $purchaseRequest): RedirectResponse

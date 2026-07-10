@@ -49,6 +49,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Purchase Request draft, edit draft, detail, nomor dokumen otomatis, budget line, validasi sisa budget, submit, approve, dan reject awal
 - Purchase Order draft dari Purchase Request approved, submit, dan approve awal
 - Print/Save PDF Purchase Order dengan format dokumen A4, supplier, item, total, dan area tanda tangan
+- Print/Save PDF Purchase Request dan Goods Receipt dengan format dokumen A4 dan area tanda tangan
 - Goods Receipt draft dari Purchase Order approved, posting GR, dan stock movement masuk gudang
 - Stock On Hand per gudang dari aggregate stock movement
 - Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
@@ -99,7 +100,7 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 Urutan kerja berikutnya:
 
 1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Print/PDF dokumen PR, GR, Stock Opname, dan laporan.
+2. Print/PDF Stock Opname dan laporan.
 3. Role/permission yang lebih detail untuk tiap modul.
 4. Audit trail tampilan dan laporan budget.
 5. Asset register dan maintenance workflow.

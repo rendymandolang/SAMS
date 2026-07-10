@@ -398,6 +398,28 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_purchase_request_print_page_can_be_rendered(): void
+    {
+        $this->test_submitted_purchase_request_can_be_approved();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $purchaseRequest = DB::table('purchase_requests')
+            ->where('purpose', 'PR untuk approval')
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/purchase-requests/'.$purchaseRequest->id.'/print');
+
+        $response->assertOk();
+        $response->assertSee('PURCHASE REQUEST');
+        $response->assertSee($purchaseRequest->document_number);
+        $response->assertSee('Purchasing');
+        $response->assertSee('ITM-RICE-01');
+        $response->assertSee('Grand Total Estimasi');
+        $response->assertSee('Diajukan oleh');
+        $response->assertSee('Diperiksa oleh');
+        $response->assertSee('Disetujui oleh');
+    }
+
     public function test_rejected_purchase_request_releases_committed_budget(): void
     {
         $this->seed();
@@ -675,6 +697,25 @@ class ExampleTest extends TestCase
             'item_id' => $item->id,
             'quantity' => 10,
         ]);
+    }
+
+    public function test_goods_receipt_print_page_can_be_rendered(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $goodsReceipt = DB::table('goods_receipts')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/goods-receipts/'.$goodsReceipt->id.'/print');
+
+        $response->assertOk();
+        $response->assertSee('GOODS RECEIPT');
+        $response->assertSee($goodsReceipt->document_number);
+        $response->assertSee('MAIN-WH');
+        $response->assertSee('ITM-RICE-01');
+        $response->assertSee('Diterima oleh');
+        $response->assertSee('Diperiksa oleh');
+        $response->assertSee('Diketahui oleh');
     }
 
     public function test_stock_on_hand_page_shows_posted_stock_balance(): void

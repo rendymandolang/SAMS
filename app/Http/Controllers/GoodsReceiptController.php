@@ -22,6 +22,7 @@ class GoodsReceiptController extends Controller
             ->select(
                 'goods_receipts.*',
                 'purchase_orders.document_number as purchase_order_number',
+                'storage_locations.code as storage_location_code',
                 'storage_locations.name as storage_location_name',
                 'users.name as receiver_name',
             )
@@ -132,11 +133,27 @@ class GoodsReceiptController extends Controller
     public function show(int $goodsReceipt): View
     {
         $header = $this->findGoodsReceipt($goodsReceipt);
+        $items = $this->goodsReceiptItems((int) $header->id);
 
-        $items = DB::table('goods_receipt_items')
+        return view('goods_receipts.show', compact('header', 'items'));
+    }
+
+    public function print(int $goodsReceipt): View
+    {
+        $header = $this->findGoodsReceipt($goodsReceipt);
+        $items = $this->goodsReceiptItems((int) $header->id);
+        $company = $this->company();
+        $branch = DB::table('branches')->where('id', $header->branch_id)->first();
+
+        return view('goods_receipts.print', compact('header', 'items', 'company', 'branch'));
+    }
+
+    private function goodsReceiptItems(int $goodsReceiptId)
+    {
+        return DB::table('goods_receipt_items')
             ->join('items', 'items.id', '=', 'goods_receipt_items.item_id')
             ->join('units', 'units.id', '=', 'goods_receipt_items.unit_id')
-            ->where('goods_receipt_items.goods_receipt_id', $header->id)
+            ->where('goods_receipt_items.goods_receipt_id', $goodsReceiptId)
             ->select(
                 'goods_receipt_items.*',
                 'items.sku',
@@ -145,8 +162,6 @@ class GoodsReceiptController extends Controller
             )
             ->orderBy('goods_receipt_items.id')
             ->get();
-
-        return view('goods_receipts.show', compact('header', 'items'));
     }
 
     public function post(int $goodsReceipt): RedirectResponse
@@ -260,6 +275,7 @@ class GoodsReceiptController extends Controller
             ->select(
                 'goods_receipts.*',
                 'purchase_orders.document_number as purchase_order_number',
+                'storage_locations.code as storage_location_code',
                 'storage_locations.name as storage_location_name',
                 'users.name as receiver_name',
             )

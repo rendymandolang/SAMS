@@ -13,6 +13,7 @@
 
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('purchase-requests.index') }}">Kembali</a>
+                    <a class="button secondary inline" href="{{ route('purchase-requests.print', $header->id) }}" target="_blank">Print PR</a>
                     @if ($header->status === 'draft')
                         <a class="button secondary inline" href="{{ route('purchase-requests.edit', $header->id) }}">Edit Draft</a>
                         <form method="POST" action="{{ route('purchase-requests.submit', $header->id) }}">
