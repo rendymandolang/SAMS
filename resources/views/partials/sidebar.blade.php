@@ -14,6 +14,9 @@
         <a class="nav-link {{ request()->routeIs('stock-opnames.*') ? 'active' : '' }}" href="{{ route('stock-opnames.index') }}"><span>Stock Opname</span><span>&rsaquo;</span></a>
         <a class="nav-link {{ request()->routeIs('reports.inventory.*') ? 'active' : '' }}" href="{{ route('reports.inventory.movements') }}"><span>Mutasi Stok</span><span>&rsaquo;</span></a>
         @if (auth()->user()->hasAnyRole(['super_admin', 'finance', 'purchasing']))
+            <a class="nav-link {{ request()->routeIs('reports.purchasing.*') ? 'active' : '' }}" href="{{ route('reports.purchasing.cycle') }}"><span>Purchasing Cycle</span><span>&rsaquo;</span></a>
+        @endif
+        @if (auth()->user()->hasAnyRole(['super_admin', 'finance', 'purchasing']))
             <a class="nav-link {{ request()->routeIs('budget-control.*') ? 'active' : '' }}" href="{{ route('budget-control.index') }}"><span>Budget Control</span><span>&rsaquo;</span></a>
         @endif
     </nav>

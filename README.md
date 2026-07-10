@@ -58,6 +58,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
 - Print/Save PDF Stock Opname dengan ringkasan selisih, item, nilai variance, dan area tanda tangan
 - Laporan Mutasi Stok dengan filter tanggal, gudang, item, saldo awal, movement masuk/keluar, dan saldo berjalan
+- Purchasing Cycle Report untuk tracking PR ke PO sampai GR, progress receipt, variance nilai, status kontrol, dan print landscape
 - Budget Control report dengan allocated, committed, actual, remaining, status risiko budget, dan print landscape
 - Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
 - Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol

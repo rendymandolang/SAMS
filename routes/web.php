@@ -10,6 +10,7 @@ use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
+use App\Http\Controllers\PurchasingCycleReportController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\UserManagementController;
@@ -88,6 +89,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-opnames/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock-opnames.print');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
     Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');
+    Route::middleware('role:super_admin,finance,purchasing')->group(function () {
+        Route::get('/reports/purchasing/cycle', [PurchasingCycleReportController::class, 'index'])->name('reports.purchasing.cycle');
+        Route::get('/reports/purchasing/cycle/print', [PurchasingCycleReportController::class, 'print'])->name('reports.purchasing.cycle.print');
+    });
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
         Route::get('/budget-control', [BudgetControlController::class, 'index'])->name('budget-control.index');
         Route::get('/budget-control/print', [BudgetControlController::class, 'print'])->name('budget-control.print');
