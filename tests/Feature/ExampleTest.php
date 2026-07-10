@@ -56,6 +56,65 @@ class ExampleTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_super_admin_can_manage_users(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $indexResponse = $this->actingAs($admin)->get('/users');
+
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('User Management');
+        $indexResponse->assertSee('purchasing@sams.local');
+
+        $storeResponse = $this->actingAs($admin)->post('/users', [
+            'name' => 'Audit User',
+            'email' => 'audit@sams.local',
+            'role' => 'staff',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'is_active' => 1,
+        ]);
+
+        $storeResponse->assertRedirect('/users');
+        $this->assertDatabaseHas('users', [
+            'email' => 'audit@sams.local',
+            'role' => 'staff',
+            'is_active' => true,
+        ]);
+
+        $user = User::query()->where('email', 'audit@sams.local')->firstOrFail();
+
+        $updateResponse = $this->actingAs($admin)->put('/users/'.$user->id, [
+            'name' => 'Audit Finance',
+            'email' => 'audit-finance@sams.local',
+            'role' => 'finance',
+            'password' => '',
+            'password_confirmation' => '',
+            'is_active' => 0,
+        ]);
+
+        $updateResponse->assertRedirect('/users');
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'email' => 'audit-finance@sams.local',
+            'role' => 'finance',
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_non_super_admin_cannot_access_user_management(): void
+    {
+        $this->seed();
+
+        $warehouse = User::query()->where('email', 'warehouse@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($warehouse)->get('/users');
+
+        $response->assertForbidden();
+    }
+
     public function test_authenticated_user_can_open_master_supplier_page(): void
     {
         $this->seed();

@@ -45,6 +45,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Login/logout lokal
 - Role awal user (`super_admin`, `staff`) dan status aktif
 - Role/permission dasar untuk `super_admin`, `purchasing`, `warehouse`, `finance`, dan `staff`
+- User Management untuk super admin: tambah user, edit role/status, dan reset password
 - Dashboard awal SAMS dengan sidebar modul
 - Seeder akun admin, company, branch, department, unit, supplier, gudang, kategori, dan item demo
 - Purchase Request draft, edit draft, detail, nomor dokumen otomatis, budget line, validasi sisa budget, submit, approve, dan reject awal
