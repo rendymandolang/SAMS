@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\DocumentStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -170,12 +171,6 @@ class StockOpnameController extends Controller
     {
         $header = $this->findStockOpname($stockOpname);
 
-        if ($header->status !== 'draft') {
-            return redirect()
-                ->route('stock-opnames.show', $header->id)
-                ->with('status', 'Hanya Stock Opname draft yang bisa diposting.');
-        }
-
         $unfilledCount = DB::table('stock_opname_items')
             ->where('stock_opname_id', $header->id)
             ->whereNull('counted_quantity')
@@ -187,7 +182,12 @@ class StockOpnameController extends Controller
                 ->with('status', 'Lengkapi quantity hasil hitung fisik sebelum posting opname.');
         }
 
-        DB::transaction(function () use ($header) {
+        $posted = DB::transaction(function () use ($header): bool {
+            $lockedHeader = DB::table('stock_opnames')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('stock_opname', $lockedHeader->status, 'posted')) {
+                return false;
+            }
+
             $now = now();
             $items = DB::table('stock_opname_items')
                 ->where('stock_opname_id', $header->id)
@@ -206,32 +206,39 @@ class StockOpnameController extends Controller
                 }
 
                 DB::table('stock_movements')->insert([
-                    'company_id' => $header->company_id,
-                    'branch_id' => $header->branch_id,
-                    'storage_location_id' => $header->storage_location_id,
+                        'company_id' => $lockedHeader->company_id,
+                        'branch_id' => $lockedHeader->branch_id,
+                        'storage_location_id' => $lockedHeader->storage_location_id,
                     'item_id' => $item->item_id,
                     'movement_type' => 'stock_opname_adjustment',
-                    'movement_at' => $header->count_date,
+                        'movement_at' => $lockedHeader->count_date,
                     'quantity' => $varianceQuantity,
                     'unit_cost' => $item->unit_cost,
                     'total_cost' => $varianceQuantity * (float) $item->unit_cost,
-                    'source_type' => 'stock_opname',
-                    'source_id' => $header->id,
-                    'created_by' => auth()->id(),
-                    'notes' => $header->document_number,
+                        'source_type' => 'stock_opname',
+                        'source_id' => $lockedHeader->id,
+                        'source_line_id' => $item->id,
+                        'created_by' => auth()->id(),
+                        'notes' => $lockedHeader->document_number,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);
             }
 
-            DB::table('stock_opnames')->where('id', $header->id)->update([
+            DB::table('stock_opnames')->where('id', $lockedHeader->id)->update([
                 'status' => 'posted',
                 'posted_at' => $now,
                 'updated_at' => $now,
             ]);
 
-            AuditLogger::log('stock_opname_posted', 'stock_opname', (int) $header->id, ['status' => $header->status], ['status' => 'posted'], (int) $header->company_id);
+            AuditLogger::log('stock_opname_posted', 'stock_opname', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'posted'], (int) $lockedHeader->company_id);
+
+            return true;
         });
+
+        if (! $posted) {
+            return redirect()->route('stock-opnames.show', $header->id)->with('status', 'Hanya Stock Opname draft yang bisa diposting.');
+        }
 
         return redirect()
             ->route('stock-opnames.show', $header->id)

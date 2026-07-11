@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\DocumentStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -270,23 +271,30 @@ class PurchaseRequestController extends Controller
     {
         $header = $this->findPurchaseRequest($purchaseRequest);
 
-        if ($header->status !== 'draft') {
-            return redirect()
-                ->route('purchase-requests.show', $header->id)
-                ->with('status', 'Hanya Purchase Request draft yang bisa disubmit.');
-        }
+        $submitted = DB::transaction(function () use ($header): bool {
+            $lockedHeader = DB::table('purchase_requests')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_request', $lockedHeader->status, 'submitted')) {
+                return false;
+            }
 
-        DB::transaction(function () use ($header) {
-            $this->commitBudget($header->id);
-            $this->createApprovalRequest($header->id, (int) $header->company_id);
+            $this->commitBudget($lockedHeader->id);
+            $this->createApprovalRequest($lockedHeader->id, (int) $lockedHeader->company_id);
 
-            DB::table('purchase_requests')->where('id', $header->id)->update([
+            DB::table('purchase_requests')->where('id', $lockedHeader->id)->update([
                 'status' => 'submitted',
                 'updated_at' => now(),
             ]);
 
-            AuditLogger::log('purchase_request_submitted', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'submitted'], (int) $header->company_id);
+            AuditLogger::log('purchase_request_submitted', 'purchase_request', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'submitted'], (int) $lockedHeader->company_id);
+
+            return true;
         });
+
+        if (! $submitted) {
+            return redirect()
+                ->route('purchase-requests.show', $header->id)
+                ->with('status', 'Hanya Purchase Request draft yang bisa disubmit.');
+        }
 
         return redirect()
             ->route('purchase-requests.show', $header->id)
@@ -297,18 +305,17 @@ class PurchaseRequestController extends Controller
     {
         $header = $this->findPurchaseRequest($purchaseRequest);
 
-        if ($header->status !== 'submitted') {
-            return redirect()
-                ->route('purchase-requests.show', $header->id)
-                ->with('status', 'Hanya Purchase Request submitted yang bisa di-approve.');
-        }
-
         $validated = $request->validate([
             'comments' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($header, $validated) {
-            $approvalRequest = $this->approvalRequestFor($header->id, (int) $header->company_id);
+        $approved = DB::transaction(function () use ($header, $validated): bool {
+            $lockedHeader = DB::table('purchase_requests')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_request', $lockedHeader->status, 'approved')) {
+                return false;
+            }
+
+            $approvalRequest = $this->approvalRequestFor($lockedHeader->id, (int) $lockedHeader->company_id);
 
             DB::table('approval_actions')->insert([
                 'approval_request_id' => $approvalRequest->id,
@@ -327,13 +334,19 @@ class PurchaseRequestController extends Controller
                 'updated_at' => now(),
             ]);
 
-            DB::table('purchase_requests')->where('id', $header->id)->update([
+            DB::table('purchase_requests')->where('id', $lockedHeader->id)->update([
                 'status' => 'approved',
                 'updated_at' => now(),
             ]);
 
-            AuditLogger::log('purchase_request_approved', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'approved', 'comments' => $validated['comments'] ?? null], (int) $header->company_id);
+            AuditLogger::log('purchase_request_approved', 'purchase_request', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'approved', 'comments' => $validated['comments'] ?? null], (int) $lockedHeader->company_id);
+
+            return true;
         });
+
+        if (! $approved) {
+            return redirect()->route('purchase-requests.show', $header->id)->with('status', 'Hanya Purchase Request submitted yang bisa di-approve.');
+        }
 
         return redirect()
             ->route('purchase-requests.show', $header->id)
@@ -344,18 +357,17 @@ class PurchaseRequestController extends Controller
     {
         $header = $this->findPurchaseRequest($purchaseRequest);
 
-        if ($header->status !== 'submitted') {
-            return redirect()
-                ->route('purchase-requests.show', $header->id)
-                ->with('status', 'Hanya Purchase Request submitted yang bisa di-reject.');
-        }
-
         $validated = $request->validate([
             'comments' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($header, $validated) {
-            $approvalRequest = $this->approvalRequestFor($header->id, (int) $header->company_id);
+        $rejected = DB::transaction(function () use ($header, $validated): bool {
+            $lockedHeader = DB::table('purchase_requests')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_request', $lockedHeader->status, 'rejected')) {
+                return false;
+            }
+
+            $approvalRequest = $this->approvalRequestFor($lockedHeader->id, (int) $lockedHeader->company_id);
 
             DB::table('approval_actions')->insert([
                 'approval_request_id' => $approvalRequest->id,
@@ -374,15 +386,21 @@ class PurchaseRequestController extends Controller
                 'updated_at' => now(),
             ]);
 
-            $this->releaseBudget($header->id);
+            $this->releaseBudget($lockedHeader->id);
 
-            DB::table('purchase_requests')->where('id', $header->id)->update([
+            DB::table('purchase_requests')->where('id', $lockedHeader->id)->update([
                 'status' => 'rejected',
                 'updated_at' => now(),
             ]);
 
-            AuditLogger::log('purchase_request_rejected', 'purchase_request', (int) $header->id, ['status' => $header->status], ['status' => 'rejected', 'comments' => $validated['comments'] ?? null], (int) $header->company_id);
+            AuditLogger::log('purchase_request_rejected', 'purchase_request', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'rejected', 'comments' => $validated['comments'] ?? null], (int) $lockedHeader->company_id);
+
+            return true;
         });
+
+        if (! $rejected) {
+            return redirect()->route('purchase-requests.show', $header->id)->with('status', 'Hanya Purchase Request submitted yang bisa di-reject.');
+        }
 
         return redirect()
             ->route('purchase-requests.show', $header->id)

@@ -1023,6 +1023,20 @@ class ExampleTest extends TestCase
             'auditable_type' => 'goods_receipt',
             'auditable_id' => $goodsReceipt->id,
         ]);
+
+        $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/post')
+            ->assertRedirect('/goods-receipts/'.$goodsReceipt->id);
+
+        $this->assertSame(1, DB::table('stock_movements')
+            ->where('source_type', 'goods_receipt')
+            ->where('source_id', $goodsReceipt->id)
+            ->count());
+        $this->assertSame(1, DB::table('audit_logs')
+            ->where('event', 'goods_receipt_posted')
+            ->where('auditable_id', $goodsReceipt->id)
+            ->count());
+        $this->assertEquals(10.0, (float) DB::table('purchase_order_items')->where('id', $purchaseOrderItem->id)->value('received_quantity'));
+        $this->assertEquals(145000.0, (float) DB::table('budget_lines')->where('id', $budgetLine->id)->value('actual_amount'));
     }
 
     public function test_goods_receipt_print_page_can_be_rendered(): void
@@ -1592,6 +1606,17 @@ class ExampleTest extends TestCase
             'quantity' => -2,
             'movement_type' => 'stock_opname_adjustment',
         ]);
+
+        $this->actingAs($user)->post('/stock-opnames/'.$stockOpname->id.'/post')
+            ->assertRedirect('/stock-opnames/'.$stockOpname->id);
+        $this->assertSame(1, DB::table('stock_movements')
+            ->where('source_type', 'stock_opname')
+            ->where('source_id', $stockOpname->id)
+            ->count());
+        $this->assertSame(1, DB::table('audit_logs')
+            ->where('event', 'stock_opname_posted')
+            ->where('auditable_id', $stockOpname->id)
+            ->count());
 
         $stockResponse = $this->actingAs($user)->get('/inventory/stock-on-hand');
 

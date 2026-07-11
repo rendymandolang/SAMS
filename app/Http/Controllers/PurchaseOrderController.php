@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\DocumentStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -155,18 +156,23 @@ class PurchaseOrderController extends Controller
     {
         $header = $this->findPurchaseOrder($purchaseOrder);
 
-        if ($header->status !== 'draft') {
+        $submitted = DB::transaction(function () use ($header): bool {
+            $lockedHeader = DB::table('purchase_orders')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_order', $lockedHeader->status, 'submitted')) {
+                return false;
+            }
+
+            DB::table('purchase_orders')->where('id', $lockedHeader->id)->update(['status' => 'submitted', 'updated_at' => now()]);
+            AuditLogger::log('purchase_order_submitted', 'purchase_order', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'submitted'], (int) $lockedHeader->company_id);
+
+            return true;
+        });
+
+        if (! $submitted) {
             return redirect()
                 ->route('purchase-orders.show', $header->id)
                 ->with('status', 'Hanya Purchase Order draft yang bisa disubmit.');
         }
-
-        DB::table('purchase_orders')->where('id', $header->id)->update([
-            'status' => 'submitted',
-            'updated_at' => now(),
-        ]);
-
-        AuditLogger::log('purchase_order_submitted', 'purchase_order', (int) $header->id, ['status' => $header->status], ['status' => 'submitted'], (int) $header->company_id);
 
         return redirect()
             ->route('purchase-orders.show', $header->id)
@@ -177,18 +183,23 @@ class PurchaseOrderController extends Controller
     {
         $header = $this->findPurchaseOrder($purchaseOrder);
 
-        if ($header->status !== 'submitted') {
+        $approved = DB::transaction(function () use ($header): bool {
+            $lockedHeader = DB::table('purchase_orders')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_order', $lockedHeader->status, 'approved')) {
+                return false;
+            }
+
+            DB::table('purchase_orders')->where('id', $lockedHeader->id)->update(['status' => 'approved', 'updated_at' => now()]);
+            AuditLogger::log('purchase_order_approved', 'purchase_order', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'approved'], (int) $lockedHeader->company_id);
+
+            return true;
+        });
+
+        if (! $approved) {
             return redirect()
                 ->route('purchase-orders.show', $header->id)
                 ->with('status', 'Hanya Purchase Order submitted yang bisa di-approve.');
         }
-
-        DB::table('purchase_orders')->where('id', $header->id)->update([
-            'status' => 'approved',
-            'updated_at' => now(),
-        ]);
-
-        AuditLogger::log('purchase_order_approved', 'purchase_order', (int) $header->id, ['status' => $header->status], ['status' => 'approved'], (int) $header->company_id);
 
         return redirect()
             ->route('purchase-orders.show', $header->id)

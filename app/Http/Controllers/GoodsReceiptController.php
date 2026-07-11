@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\DocumentStateMachine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -175,16 +176,15 @@ class GoodsReceiptController extends Controller
     {
         $header = $this->findGoodsReceipt($goodsReceipt);
 
-        if ($header->status !== 'draft') {
-            return redirect()
-                ->route('goods-receipts.show', $header->id)
-                ->with('status', 'Hanya Goods Receipt draft yang bisa diposting.');
-        }
+        $posted = DB::transaction(function () use ($header): bool {
+            $lockedHeader = DB::table('goods_receipts')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('goods_receipt', $lockedHeader->status, 'posted')) {
+                return false;
+            }
 
-        DB::transaction(function () use ($header) {
             $now = now();
             $items = DB::table('goods_receipt_items')
-                ->where('goods_receipt_id', $header->id)
+                ->where('goods_receipt_id', $lockedHeader->id)
                 ->get();
 
             foreach ($items as $item) {
@@ -196,35 +196,42 @@ class GoodsReceiptController extends Controller
                     $this->actualizeBudgetLine($item, $now);
 
                     DB::table('stock_movements')->insert([
-                        'company_id' => $header->company_id,
-                        'branch_id' => $header->branch_id,
-                        'storage_location_id' => $header->storage_location_id,
+                        'company_id' => $lockedHeader->company_id,
+                        'branch_id' => $lockedHeader->branch_id,
+                        'storage_location_id' => $lockedHeader->storage_location_id,
                         'item_id' => $item->item_id,
                         'movement_type' => 'goods_receipt',
-                        'movement_at' => $header->received_at,
+                        'movement_at' => $lockedHeader->received_at,
                         'quantity' => $item->accepted_quantity,
                         'unit_cost' => $item->unit_cost,
                         'total_cost' => (float) $item->accepted_quantity * (float) $item->unit_cost,
                         'source_type' => 'goods_receipt',
-                        'source_id' => $header->id,
+                        'source_id' => $lockedHeader->id,
+                        'source_line_id' => $item->id,
                         'created_by' => auth()->id(),
-                        'notes' => $header->document_number,
+                        'notes' => $lockedHeader->document_number,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);
                 }
             }
 
-            DB::table('goods_receipts')->where('id', $header->id)->update([
+            DB::table('goods_receipts')->where('id', $lockedHeader->id)->update([
                 'status' => 'posted',
                 'posted_at' => $now,
                 'updated_at' => $now,
             ]);
 
-            $this->refreshPurchaseOrderReceiptStatus((int) $header->purchase_order_id);
+            $this->refreshPurchaseOrderReceiptStatus((int) $lockedHeader->purchase_order_id);
 
-            AuditLogger::log('goods_receipt_posted', 'goods_receipt', (int) $header->id, ['status' => $header->status], ['status' => 'posted'], (int) $header->company_id);
+            AuditLogger::log('goods_receipt_posted', 'goods_receipt', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'posted'], (int) $lockedHeader->company_id);
+
+            return true;
         });
+
+        if (! $posted) {
+            return redirect()->route('goods-receipts.show', $header->id)->with('status', 'Hanya Goods Receipt draft yang bisa diposting.');
+        }
 
         return redirect()
             ->route('goods-receipts.show', $header->id)
