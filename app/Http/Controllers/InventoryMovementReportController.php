@@ -2,14 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InventoryMovementReportController extends Controller
 {
     public function __invoke(Request $request): View
+    {
+        return view('reports.inventory_movements', $this->data($request));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->data($request);
+
+        return CsvExporter::download('inventory-movements-'.now()->format('Ymd-His').'.csv', [
+            'Movement At',
+            'Document',
+            'Source Type',
+            'Source ID',
+            'Movement Type',
+            'Location',
+            'SKU',
+            'Item',
+            'Unit',
+            'Qty In',
+            'Qty Out',
+            'Running Qty',
+            'Unit Cost',
+            'Movement Value',
+            'Running Value',
+        ], $data['rows']->map(fn (object $row) => [
+            $row->movement_at,
+            $row->notes,
+            $row->source_type,
+            $row->source_id,
+            $row->movement_type,
+            $row->location_code.' - '.$row->location_name,
+            $row->sku,
+            $row->item_name,
+            $row->unit_code,
+            (float) $row->quantity_in,
+            (float) $row->quantity_out,
+            (float) $row->running_quantity,
+            (float) $row->unit_cost,
+            (float) $row->total_cost,
+            (float) $row->running_value,
+        ]));
+    }
+
+    private function data(Request $request): array
     {
         $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
 
@@ -55,13 +101,13 @@ class InventoryMovementReportController extends Controller
             'movement_count' => $rows->count(),
         ];
 
-        return view('reports.inventory_movements', [
+        return [
             'filters' => $filters,
             'items' => $this->items((int) $company->id),
             'locations' => $this->locations((int) $company->id),
             'rows' => $rows,
             'summary' => $summary,
-        ]);
+        ];
     }
 
     private function movements(int $companyId, Carbon $dateFrom, Carbon $dateTo, array $filters)

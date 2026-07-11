@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchasingCycleReportController extends Controller
 {
@@ -17,6 +19,49 @@ class PurchasingCycleReportController extends Controller
     public function print(Request $request): View
     {
         return view('reports.purchasing_cycle_print', $this->data($request));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->data($request);
+
+        return CsvExporter::download('purchasing-cycle-'.now()->format('Ymd-His').'.csv', [
+            'PR Number',
+            'PR Date',
+            'Department',
+            'Requester',
+            'Priority',
+            'PR Status',
+            'PR Value',
+            'PO Number',
+            'PO Status',
+            'Supplier',
+            'PO Date',
+            'PO Value',
+            'Variance',
+            'GR Count',
+            'Latest GR',
+            'Received Percent',
+            'Cycle Status',
+        ], $data['rows']->map(fn (object $row) => [
+            $row->document_number,
+            $row->request_date,
+            $row->department_code.' - '.$row->department_name,
+            $row->requester_name,
+            $row->priority,
+            $row->status,
+            (float) $row->estimated_total,
+            $row->purchase_order_number,
+            $row->purchase_order_status,
+            $row->supplier_name,
+            $row->order_date,
+            (float) $row->purchase_order_total,
+            $row->variance_amount,
+            $row->goods_receipt_count,
+            $row->latest_goods_receipt_number,
+            round((float) $row->received_percent, 2),
+            $row->cycle_status,
+        ]));
     }
 
     private function data(Request $request): array

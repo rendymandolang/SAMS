@@ -486,6 +486,21 @@ class ExampleTest extends TestCase
         $response->assertSee('Remaining');
     }
 
+    public function test_budget_control_export_can_be_downloaded(): void
+    {
+        $this->test_purchase_request_submit_commits_budget();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/budget-control/export');
+        $content = $response->streamedContent();
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('Department Code', $content);
+        $this->assertStringContainsString('PUR-FNB', $content);
+    }
+
     public function test_staff_user_cannot_approve_purchase_request(): void
     {
         $this->seed();
@@ -1356,6 +1371,24 @@ class ExampleTest extends TestCase
         $response->assertSee('completed');
     }
 
+    public function test_asset_maintenance_history_export_can_be_downloaded(): void
+    {
+        $this->test_asset_maintenance_can_be_created_completed_and_printed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/assets/maintenance-history/export?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+        $content = $response->streamedContent();
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('WO Number', $content);
+        $this->assertStringContainsString('Bali Tech Service', $content);
+    }
+
     public function test_purchasing_cycle_report_shows_pr_po_and_gr_progress(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
@@ -1395,6 +1428,24 @@ class ExampleTest extends TestCase
         $response->assertSee('100,0%');
     }
 
+    public function test_purchasing_cycle_export_can_be_downloaded(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/purchasing/cycle/export?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+        $content = $response->streamedContent();
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('PR Number', $content);
+        $this->assertStringContainsString('GR-', $content);
+    }
+
     public function test_supplier_performance_report_shows_supplier_scorecard(): void
     {
         $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
@@ -1430,6 +1481,24 @@ class ExampleTest extends TestCase
         $response->assertSee('Bali Fresh Market');
         $response->assertSee('100,0%');
         $response->assertSee('excellent');
+    }
+
+    public function test_supplier_performance_export_can_be_downloaded(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/purchasing/suppliers/export?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+        ]));
+        $content = $response->streamedContent();
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('Supplier Code', $content);
+        $this->assertStringContainsString('Bali Fresh Market', $content);
     }
 
     public function test_stock_on_hand_page_shows_posted_stock_balance(): void
@@ -1553,5 +1622,28 @@ class ExampleTest extends TestCase
         $response->assertSee('goods receipt');
         $response->assertSee('stock opname adjustment');
         $response->assertSee('8,00');
+    }
+
+    public function test_inventory_movement_export_can_be_downloaded(): void
+    {
+        $this->test_stock_opname_can_be_created_and_posted_as_stock_adjustment();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $location = DB::table('storage_locations')->where('code', 'MAIN-WH')->firstOrFail();
+        $item = DB::table('items')->where('sku', 'ITM-RICE-01')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports/inventory/movements/export?'.http_build_query([
+            'date_from' => now()->subDay()->format('Y-m-d'),
+            'date_to' => now()->addDay()->format('Y-m-d'),
+            'storage_location_id' => $location->id,
+            'item_id' => $item->id,
+        ]));
+        $content = $response->streamedContent();
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
+        $this->assertStringContainsString('Movement At', $content);
+        $this->assertStringContainsString('GR-', $content);
+        $this->assertStringContainsString('ITM-RICE-01', $content);
     }
 }

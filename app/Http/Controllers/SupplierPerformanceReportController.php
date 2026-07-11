@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupplierPerformanceReportController extends Controller
 {
@@ -17,6 +19,41 @@ class SupplierPerformanceReportController extends Controller
     public function print(Request $request): View
     {
         return view('reports.supplier_performance_print', $this->data($request));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->data($request);
+
+        return CsvExporter::download('supplier-performance-'.now()->format('Ymd-His').'.csv', [
+            'Supplier Code',
+            'Supplier Name',
+            'PO Count',
+            'Completed PO',
+            'Active PO',
+            'Order Value',
+            'Accepted Value',
+            'Ordered Qty',
+            'Accepted Qty',
+            'Rejected Qty',
+            'Completion Rate',
+            'Rejection Rate',
+            'Status',
+        ], $data['rows']->map(fn (object $row) => [
+            $row->supplier_code,
+            $row->supplier_name,
+            $row->purchase_order_count,
+            $row->completed_order_count,
+            $row->active_order_count,
+            (float) $row->total_order_amount,
+            (float) $row->accepted_value,
+            (float) $row->ordered_quantity,
+            (float) $row->accepted_quantity,
+            (float) $row->rejected_quantity,
+            round((float) $row->completion_rate, 2),
+            round((float) $row->rejection_rate, 2),
+            $row->performance_status,
+        ]));
     }
 
     private function data(Request $request): array

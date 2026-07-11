@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Laporan Mutasi Stok · SAMS'])
+@extends('layouts.app', ['title' => 'Laporan Mutasi Stok - SAMS'])
 
 @section('body')
     <div class="app-shell">
@@ -11,7 +11,10 @@
                     <h1>Laporan Mutasi Stok</h1>
                 </div>
 
-                <button class="button secondary inline" type="button" onclick="window.print()">Print</button>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <a class="button secondary inline" href="{{ route('reports.inventory.movements.export', request()->query()) }}">Export CSV</a>
+                    <button class="button secondary inline" type="button" onclick="window.print()">Print</button>
+                </div>
             </header>
 
             <section class="card" style="margin-bottom:18px;">
@@ -32,7 +35,7 @@
                             <select class="input" name="storage_location_id">
                                 <option value="">Semua gudang</option>
                                 @foreach ($locations as $location)
-                                    <option value="{{ $location->id }}" @selected((int) $filters['storage_location_id'] === (int) $location->id)>{{ $location->code }} · {{ $location->name }}</option>
+                                    <option value="{{ $location->id }}" @selected((int) $filters['storage_location_id'] === (int) $location->id)>{{ $location->code }} - {{ $location->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -42,7 +45,7 @@
                             <select class="input" name="item_id">
                                 <option value="">Semua item</option>
                                 @foreach ($items as $item)
-                                    <option value="{{ $item->id }}" @selected((int) $filters['item_id'] === (int) $item->id)>{{ $item->sku }} · {{ $item->name }}</option>
+                                    <option value="{{ $item->id }}" @selected((int) $filters['item_id'] === (int) $item->id)>{{ $item->sku }} - {{ $item->name }}</option>
                                 @endforeach
                             </select>
                         </label>

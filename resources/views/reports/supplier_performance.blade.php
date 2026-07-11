@@ -11,7 +11,10 @@
                     <h1>Supplier Performance</h1>
                 </div>
 
-                <a class="button secondary inline" href="{{ route('reports.purchasing.suppliers.print', request()->query()) }}" target="_blank">Print Report</a>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <a class="button secondary inline" href="{{ route('reports.purchasing.suppliers.export', request()->query()) }}">Export CSV</a>
+                    <a class="button secondary inline" href="{{ route('reports.purchasing.suppliers.print', request()->query()) }}" target="_blank">Print Report</a>
+                </div>
             </header>
 
             <section class="card" style="margin-bottom:18px;">

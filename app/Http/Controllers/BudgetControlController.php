@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BudgetControlController extends Controller
 {
@@ -16,6 +18,43 @@ class BudgetControlController extends Controller
     public function print(Request $request): View
     {
         return view('budget_control.print', $this->data($request));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->data($request);
+
+        return CsvExporter::download('budget-control-'.now()->format('Ymd-His').'.csv', [
+            'Department Code',
+            'Department Name',
+            'Budget',
+            'Period Start',
+            'Period End',
+            'Account Code',
+            'Description',
+            'Allocated',
+            'Committed',
+            'Actual',
+            'Used',
+            'Remaining',
+            'Used Percent',
+            'Status',
+        ], $data['lines']->map(fn (object $line) => [
+            $line->department_code,
+            $line->department_name,
+            $line->budget_name,
+            $line->period_start,
+            $line->period_end,
+            $line->account_code,
+            $line->description,
+            (float) $line->allocated_amount,
+            (float) $line->committed_amount,
+            (float) $line->actual_amount,
+            (float) $line->used_amount,
+            (float) $line->remaining_amount,
+            round((float) $line->used_percent, 2),
+            $line->control_status,
+        ]));
     }
 
     private function data(Request $request): array

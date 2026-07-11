@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetMaintenanceReportController extends Controller
 {
@@ -17,6 +19,51 @@ class AssetMaintenanceReportController extends Controller
     public function print(Request $request): View
     {
         return view('reports.asset_maintenance_history_print', $this->data($request));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $data = $this->data($request);
+
+        return CsvExporter::download('asset-maintenance-history-'.now()->format('Ymd-His').'.csv', [
+            'WO Number',
+            'Asset Number',
+            'Asset Name',
+            'Item',
+            'Department',
+            'Location',
+            'Type',
+            'Priority',
+            'Status',
+            'Request Date',
+            'Scheduled Date',
+            'Completed Date',
+            'Vendor',
+            'Estimated Cost',
+            'Actual Cost',
+            'Cost Variance',
+            'Days Open',
+            'Control Status',
+        ], $data['rows']->map(fn (object $row) => [
+            $row->document_number,
+            $row->asset_number,
+            $row->asset_name,
+            $row->sku.' - '.$row->item_name,
+            $row->department_code ? $row->department_code.' - '.$row->department_name : null,
+            $row->location_code ? $row->location_code.' - '.$row->location_name : null,
+            $row->maintenance_type,
+            $row->priority,
+            $row->status,
+            $row->request_date,
+            $row->scheduled_date,
+            $row->completed_date,
+            $row->vendor_name,
+            (float) $row->estimated_cost,
+            (float) $row->actual_cost,
+            (float) $row->cost_variance,
+            (float) $row->days_open,
+            $row->control_status,
+        ]));
     }
 
     private function data(Request $request): array

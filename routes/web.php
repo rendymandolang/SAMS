@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:super_admin,finance,purchasing,warehouse')->group(function () {
         Route::get('/reports/assets/maintenance-history', [AssetMaintenanceReportController::class, 'index'])->name('reports.assets.maintenance-history');
         Route::get('/reports/assets/maintenance-history/print', [AssetMaintenanceReportController::class, 'print'])->name('reports.assets.maintenance-history.print');
+        Route::get('/reports/assets/maintenance-history/export', [AssetMaintenanceReportController::class, 'export'])->name('reports.assets.maintenance-history.export');
     });
     Route::get('/inventory/stock-on-hand', StockOnHandController::class)->name('inventory.stock-on-hand');
     Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
@@ -117,15 +118,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-opnames/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock-opnames.print');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
     Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');
+    Route::get('/reports/inventory/movements/export', [InventoryMovementReportController::class, 'export'])->name('reports.inventory.movements.export');
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
         Route::get('/reports/purchasing/cycle', [PurchasingCycleReportController::class, 'index'])->name('reports.purchasing.cycle');
         Route::get('/reports/purchasing/cycle/print', [PurchasingCycleReportController::class, 'print'])->name('reports.purchasing.cycle.print');
+        Route::get('/reports/purchasing/cycle/export', [PurchasingCycleReportController::class, 'export'])->name('reports.purchasing.cycle.export');
         Route::get('/reports/purchasing/suppliers', [SupplierPerformanceReportController::class, 'index'])->name('reports.purchasing.suppliers');
         Route::get('/reports/purchasing/suppliers/print', [SupplierPerformanceReportController::class, 'print'])->name('reports.purchasing.suppliers.print');
+        Route::get('/reports/purchasing/suppliers/export', [SupplierPerformanceReportController::class, 'export'])->name('reports.purchasing.suppliers.export');
     });
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
         Route::get('/budget-control', [BudgetControlController::class, 'index'])->name('budget-control.index');
         Route::get('/budget-control/print', [BudgetControlController::class, 'print'])->name('budget-control.print');
+        Route::get('/budget-control/export', [BudgetControlController::class, 'export'])->name('budget-control.export');
     });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
