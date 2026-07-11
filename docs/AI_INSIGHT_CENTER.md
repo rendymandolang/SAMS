@@ -6,6 +6,15 @@ AI Insight Center is built and validated locally. VPS deployment does not change
 
 The default `local` driver requires no API key. It produces deterministic, auditable operational insights for budget utilization, pending approvals, negative stock, and overdue maintenance.
 
+Predictive analytics included locally:
+
+- 90-day stock consumption, days-of-cover, and recommended reorder quantity;
+- purchase price deviation against item history;
+- supplier risk scoring from lateness, rejection rate, and incomplete orders;
+- maintenance prediction from asset condition, event frequency, overdue work orders, and historical intervals.
+
+Predictions expose their confidence and return an explicit insufficient-data state when history is not adequate. They are decision support, not automatic transactions.
+
 ## OpenAI provider
 
 Set these only in the local or server `.env` file:

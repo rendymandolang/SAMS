@@ -47,6 +47,7 @@ class AiInsightService
 
     public function snapshot(int $companyId): array
     {
+        $predictive = app(AiPredictiveAnalytics::class);
         $budget = DB::table('budget_lines')->join('budgets', 'budgets.id', '=', 'budget_lines.budget_id')
             ->where('budgets.company_id', $companyId)
             ->selectRaw('COALESCE(SUM(allocated_amount),0) allocated, COALESCE(SUM(committed_amount),0) committed, COALESCE(SUM(actual_amount),0) actual')->first();
@@ -60,6 +61,10 @@ class AiInsightService
             'open_maintenances' => DB::table('asset_maintenances')->where('company_id', $companyId)->whereIn('status', ['open', 'in_progress'])->whereNull('deleted_at')->count(),
             'overdue_maintenances' => DB::table('asset_maintenances')->where('company_id', $companyId)->whereIn('status', ['open', 'in_progress'])->whereDate('scheduled_date', '<', today())->whereNull('deleted_at')->count(),
             'negative_stock_items' => DB::table('stock_movements')->where('company_id', $companyId)->groupBy('storage_location_id', 'item_id')->havingRaw('SUM(quantity) < 0')->get()->count(),
+            'stock_forecasts' => $predictive->stockForecasts($companyId),
+            'price_anomalies' => $predictive->priceAnomalies($companyId),
+            'supplier_risks' => $predictive->supplierRisks($companyId),
+            'maintenance_predictions' => $predictive->maintenancePredictions($companyId),
         ];
     }
 
@@ -73,6 +78,10 @@ class AiInsightService
         if ($snapshot['pending_purchase_requests'] + $snapshot['pending_purchase_orders'] > 0) $insights[] = $this->insight('warning', 'Approval tertunda', $snapshot['pending_purchase_requests'].' PR dan '.$snapshot['pending_purchase_orders'].' PO menunggu keputusan.', 'Buka Approval Center dan selesaikan dokumen tertua.');
         if ($snapshot['negative_stock_items'] > 0) $insights[] = $this->insight('critical', 'Saldo stok negatif', $snapshot['negative_stock_items'].' kombinasi item-lokasi memiliki saldo negatif.', 'Audit movement dan lakukan stock opname terkontrol.');
         if ($snapshot['overdue_maintenances'] > 0) $insights[] = $this->insight('warning', 'Maintenance lewat jadwal', $snapshot['overdue_maintenances'].' pekerjaan maintenance sudah melewati jadwal.', 'Prioritaskan aset kritikal dan tetapkan penanggung jawab.');
+        if ($forecast = collect($snapshot['stock_forecasts'])->first(fn (array $row) => $row['recommended_reorder'] > 0)) $insights[] = $this->insight('warning', 'Prediksi kebutuhan stok', $forecast['sku'].' diperkirakan membutuhkan reorder '.$forecast['recommended_reorder'].' unit'.($forecast['days_cover'] !== null ? ' dengan '.$forecast['days_cover'].' hari persediaan.' : '.'), 'Validasi pemakaian aktual dan buat PR jika kebutuhan terkonfirmasi.');
+        if ($price = collect($snapshot['price_anomalies'])->first()) $insights[] = $this->insight($price['severity'], 'Anomali harga pembelian', $price['sku'].' menyimpang '.$price['deviation_percent'].'% dari rerata historis.', 'Bandingkan quotation dan minta klarifikasi supplier sebelum approval.');
+        if ($supplier = collect($snapshot['supplier_risks'])->first(fn (array $row) => $row['risk_score'] >= 40)) $insights[] = $this->insight($supplier['risk_level'] === 'high' ? 'critical' : 'warning', 'Risiko supplier', $supplier['name'].' memiliki risk score '.$supplier['risk_score'].'/100.', 'Review ketepatan waktu, reject rate, dan alternatif supplier.');
+        if ($asset = collect($snapshot['maintenance_predictions'])->first(fn (array $row) => $row['risk_score'] >= 40)) $insights[] = $this->insight($asset['risk_level'] === 'high' ? 'critical' : 'warning', 'Prediksi maintenance aset', $asset['asset_number'].' memiliki risk score '.$asset['risk_score'].'/100 dan estimasi maintenance '.$asset['predicted_maintenance_date'].'.', 'Jadwalkan inspeksi preventif sebelum tanggal prediksi.');
         if ($insights === []) $insights[] = $this->insight('healthy', 'Operasional terkendali', 'Tidak ada anomali prioritas tinggi pada snapshot saat ini.', 'Pertahankan monitoring dan review berkala.');
 
         return ['provider' => 'local', 'model' => null, 'insights' => $insights];
