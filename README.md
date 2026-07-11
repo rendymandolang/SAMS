@@ -151,3 +151,6 @@ Saat aplikasi siap dipindahkan:
 
 Database produksi tidak disalin dengan menimpa migration. Data lokal yang perlu
 dipertahankan akan diekspor, diverifikasi, lalu diimpor melalui prosedur migrasi.
+
+Checklist lengkap backup, deployment, monitoring, verifikasi, dan rollback tersedia di
+[`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md).
