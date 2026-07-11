@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
+use App\Support\CompanyContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -125,7 +126,7 @@ class AttachmentController extends Controller
     private function entity(string $type, int $id): object
     {
         $meta = $this->meta($type);
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
+        $company = app(CompanyContext::class)->current();
 
         $entity = DB::table($meta['table'])
             ->where('company_id', $company->id)
@@ -139,7 +140,7 @@ class AttachmentController extends Controller
 
     private function findAttachment(int $attachment): object
     {
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
+        $company = app(CompanyContext::class)->current();
 
         $row = DB::table('attachments')
             ->where('company_id', $company->id)

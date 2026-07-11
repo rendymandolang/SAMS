@@ -8,9 +8,12 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BudgetControlController;
+use App\Http\Controllers\CompanyContextController;
+use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryMovementReportController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
@@ -31,9 +34,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 });
 
+Route::get('/locale/{locale}', LocaleController::class)->name('locale.update');
+
 Route::middleware('auth')->group(function () {
+    Route::post('/context/company', [CompanyContextController::class, 'update'])->name('context.company.update');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::middleware('role:super_admin')->group(function () {
+        Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
+        Route::put('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');

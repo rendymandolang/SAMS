@@ -25,9 +25,10 @@ class AuditLogger
 
     private static function companyId(): ?int
     {
-        return DB::table('companies')
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->value('id');
+        if (! auth()->check()) {
+            return null;
+        }
+
+        return app(CompanyContext::class)->id();
     }
 }

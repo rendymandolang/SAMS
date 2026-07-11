@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -9,7 +10,7 @@ class StockOnHandController extends Controller
 {
     public function __invoke(): View
     {
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
+        $company = app(CompanyContext::class)->current();
 
         $rows = DB::table('stock_movements')
             ->join('items', 'items.id', '=', 'stock_movements.item_id')

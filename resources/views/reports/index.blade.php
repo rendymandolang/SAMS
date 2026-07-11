@@ -1,70 +1,72 @@
-@extends('layouts.app', ['title' => 'Report Center - SAMS'])
+@extends('layouts.app', ['title' => __('reports.center.title').' · SAMS'])
 
 @section('body')
     <div class="app-shell">
         @include('partials.sidebar')
 
         <main class="main">
-            <header class="topbar">
-                <div>
-                    <p class="eyebrow">Control Tower</p>
-                    <h1>Report Center</h1>
-                    <p class="muted" style="margin:8px 0 0;max-width:760px;line-height:1.7;">Pusat laporan SAMS untuk print, export, dan kontrol operasional. Area ini disiapkan sebagai fondasi AI reporting berikutnya.</p>
+            <header class="topbar page-intro">
+                <div class="page-intro__copy">
+                    <p class="eyebrow">SuperSoft Intelligence</p>
+                    <h1>{{ __('reports.center.title') }}</h1>
+                    <p class="muted">{{ __('reports.center.subtitle') }}</p>
                 </div>
 
-                <a class="button secondary inline" href="{{ route('dashboard') }}">Back to Dashboard</a>
+                <a class="button secondary inline" href="{{ route('dashboard') }}">{{ __('common.actions.back') }}</a>
             </header>
 
             <section class="grid stats" style="margin-bottom:18px;">
-                <div class="card">
-                    <div class="muted">Ready Reports</div>
+                <div class="card metric-card">
+                    <div class="muted">{{ __('reports.metrics.total_reports') }}</div>
                     <div class="stat-value">{{ number_format($summary['ready_reports']) }}</div>
-                    <div class="muted">Laporan aktif</div>
+                    <div class="muted">{{ __('reports.center.available_reports') }}</div>
                 </div>
-                <div class="card">
-                    <div class="muted">Export Ready</div>
+                <div class="card metric-card">
+                    <div class="muted">{{ __('reports.metrics.export_ready') }}</div>
                     <div class="stat-value">{{ number_format($summary['export_ready']) }}</div>
-                    <div class="muted">CSV untuk Excel</div>
+                    <div class="muted">CSV / Excel</div>
                 </div>
-                <div class="card">
-                    <div class="muted">Print Ready</div>
+                <div class="card metric-card">
+                    <div class="muted">{{ __('reports.metrics.print_ready') }}</div>
                     <div class="stat-value">{{ number_format($summary['print_ready']) }}</div>
-                    <div class="muted">Dokumen print/PDF</div>
+                    <div class="muted">Print / PDF</div>
                 </div>
-                <div class="card">
-                    <div class="muted">Control Alerts</div>
+                <div class="card metric-card {{ $summary['control_alerts'] > 0 ? 'warning' : '' }}">
+                    <div class="muted">{{ __('reports.metrics.control_alerts') }}</div>
                     <div class="stat-value">{{ number_format($summary['control_alerts']) }}</div>
-                    <div class="muted">Perlu perhatian</div>
+                    <div class="muted">{{ __('reports.metrics.needs_attention') }}</div>
                 </div>
             </section>
 
             <section class="card" style="margin-bottom:18px;">
-                <div class="toolbar">
+                <div class="toolbar section-heading">
                     <div>
-                        <h2 style="margin-bottom:6px;">Available Reports</h2>
-                        <p class="muted" style="margin:0;">Setiap laporan dibuat dengan jalur operasional: lihat data, print dokumen, lalu export untuk analisa lanjutan.</p>
+                        <h2 style="margin-bottom:6px;">{{ __('reports.center.available_reports') }}</h2>
+                        <p class="muted" style="margin:0;">{{ __('reports.center.catalogue_description') }}</p>
                     </div>
-                    <span class="badge">AI-ready foundation</span>
+                    <span class="badge">{{ __('reports.center.ai_ready') }}</span>
                 </div>
 
                 <div class="report-grid">
                     @foreach ($reports as $report)
-                        <article class="quick-action" style="display:grid;gap:14px;">
-                            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
-                                <div>
-                                    <p class="eyebrow">{{ $report['category'] }}</p>
-                                    <h3 style="margin-bottom:8px;">{{ $report['title'] }}</h3>
-                                    <p class="muted" style="margin:0;line-height:1.7;">{{ $report['description'] }}</p>
-                                </div>
+                        <article class="quick-action report-card">
+                            <div class="report-card__head">
+                                <span class="report-card__icon"><x-icon name="reports" /></span>
                                 <span class="badge">{{ $report['badge'] }}</span>
                             </div>
 
-                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                                <a class="button inline" href="{{ route($report['route']) }}">Open</a>
+                            <div class="report-card__body">
+                                <p class="eyebrow">{{ __('reports.categories.'.$report['category_key']) }}</p>
+                                <h3 style="margin-bottom:8px;">{{ __('reports.names.'.$report['name_key']) }}</h3>
+                                <p class="muted">{{ __('reports.descriptions.'.$report['name_key']) }}</p>
+                            </div>
+
+                            <div class="report-card__actions">
+                                <a class="button inline" href="{{ route($report['route']) }}">{{ __('common.actions.open') }}</a>
                                 @if ($report['print_route'])
-                                    <a class="button secondary inline" href="{{ route($report['print_route']) }}" target="_blank">Print</a>
+                                    <a class="button secondary inline" href="{{ route($report['print_route']) }}" target="_blank" rel="noopener">{{ __('common.actions.print') }}</a>
                                 @endif
-                                <a class="button secondary inline" href="{{ route($report['export_route']) }}">Export CSV</a>
+                                <a class="button secondary inline" href="{{ route($report['export_route']) }}">{{ __('common.actions.export_csv') }}</a>
                             </div>
                         </article>
                     @endforeach
@@ -72,36 +74,24 @@
             </section>
 
             <section class="card">
-                <div class="toolbar">
+                <div class="toolbar section-heading">
                     <div>
-                        <h2 style="margin-bottom:6px;">Next Intelligence Layer</h2>
-                        <p class="muted" style="margin:0;line-height:1.7;">Tahap berikutnya: ringkasan otomatis, anomaly watch, supplier risk note, budget burn insight, dan rekomendasi action.</p>
+                        <h2 style="margin-bottom:6px;">{{ __('reports.intelligence.title') }}</h2>
+                        <p class="muted" style="margin:0;line-height:1.7;">{{ __('reports.intelligence.description') }}</p>
                     </div>
-                    <span class="badge next">Upcoming</span>
+                    <span class="badge next">{{ __('reports.intelligence.upcoming') }}</span>
                 </div>
 
                 <div class="module-list">
-                    <div class="module-row">
-                        <div>
-                            <strong>AI Executive Summary</strong>
-                            <p class="muted" style="margin:6px 0 0;line-height:1.6;">Narasi otomatis dari data purchasing, budget, inventory, dan maintenance.</p>
+                    @foreach (['executive_summary', 'template_control', 'scheduled_reports'] as $intelligenceItem)
+                        <div class="module-row">
+                            <div>
+                                <strong>{{ __('reports.intelligence.items.'.$intelligenceItem.'.title') }}</strong>
+                                <p class="muted" style="margin:6px 0 0;line-height:1.6;">{{ __('reports.intelligence.items.'.$intelligenceItem.'.description') }}</p>
+                            </div>
+                            <span class="badge next">{{ __('reports.intelligence.planned') }}</span>
                         </div>
-                        <span class="badge next">Planned</span>
-                    </div>
-                    <div class="module-row">
-                        <div>
-                            <strong>Report Template Control</strong>
-                            <p class="muted" style="margin:6px 0 0;line-height:1.6;">Standarisasi print seperti dokumen enterprise: nomor, periode, approval, footer, dan signature.</p>
-                        </div>
-                        <span class="badge next">Planned</span>
-                    </div>
-                    <div class="module-row">
-                        <div>
-                            <strong>Saved Filters & Scheduled Reports</strong>
-                            <p class="muted" style="margin:6px 0 0;line-height:1.6;">Filter favorit, export rutin, dan kesiapan pengiriman laporan saat SAMS masuk VPS.</p>
-                        </div>
-                        <span class="badge next">Planned</span>
-                    </div>
+                    @endforeach
                 </div>
             </section>
         </main>

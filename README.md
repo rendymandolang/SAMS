@@ -70,6 +70,11 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Export CSV untuk Budget Control, Purchasing Cycle, Supplier Performance, Asset Maintenance History, dan Laporan Mutasi Stok agar data kontrol bisa dibuka di Excel
 - Attachment dokumen untuk PR, PO, GR, Asset Register, dan Asset Maintenance
 - Executive dashboard visual dengan operational health snapshot untuk purchasing, budget, asset, dan maintenance
+- Company Context aktif untuk membatasi dashboard, transaksi, attachment, audit, dan laporan ke perusahaan milik user
+- Company Settings untuk nama usaha/PT, NPWP, alamat, telepon, email, logo, timezone, mata uang, format tanggal/waktu, dan tema warna
+- UI bilingual terbatas Bahasa Indonesia dan English dengan preferensi sesi serta bahasa bawaan perusahaan
+- Sidebar modular yang sticky di desktop, menjadi drawer di HP/tablet, dan Report Center dengan visual kartu adaptif
+- Identitas logo perusahaan dipakai pada sidebar serta dokumen print yang sudah tersedia
 - Multi-company, multi-branch, dan department
 - Supplier dan item master
 - Department budget
@@ -122,11 +127,11 @@ Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master 
 
 Urutan kerja berikutnya:
 
-1. Master data item, kategori, satuan, supplier, dan gudang.
-2. Print/PDF laporan inventory dan budget control.
-3. Role/permission yang lebih detail untuk tiap modul.
-4. Audit trail lanjutan dan AI reporting.
-5. Asset register dan maintenance workflow.
+1. Role, permission, dan data scope yang lebih detail per perusahaan, modul, cabang, serta departemen.
+2. Module entitlement untuk menentukan modul yang dibeli dan diaktifkan setiap perusahaan.
+3. Transaction hardening: state machine, idempotency, reversal, dan period locking.
+4. API v1 dan mobile-ready authentication.
+5. Inventory costing, asset lifecycle, accounting journal kernel, lalu POS.
 
 ## VPS Migration Strategy
 

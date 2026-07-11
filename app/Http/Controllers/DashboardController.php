@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -9,48 +10,49 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $stats = [
-            'purchase_requests' => DB::table('purchase_requests')->count(),
-            'purchase_orders' => DB::table('purchase_orders')->count(),
-            'items' => DB::table('items')->whereNull('deleted_at')->count(),
-            'suppliers' => DB::table('suppliers')->whereNull('deleted_at')->count(),
-            'stock_movements' => DB::table('stock_movements')->count(),
-            'goods_receipts' => DB::table('goods_receipts')->count(),
-            'stock_opnames' => DB::table('stock_opnames')->count(),
-            'stock_on_hand_value' => DB::table('stock_movements')->sum('total_cost'),
-            'budgets' => DB::table('budgets')->count(),
-            'assets' => DB::table('asset_registers')->whereNull('deleted_at')->count(),
-            'open_maintenance' => DB::table('asset_maintenances')->whereIn('status', ['open', 'in_progress'])->whereNull('deleted_at')->count(),
-            'pending_approvals' => DB::table('purchase_requests')->where('status', 'submitted')->count()
-                + DB::table('purchase_orders')->where('status', 'submitted')->count(),
-        ];
+        $context = app(CompanyContext::class);
+        $company = $context->current();
+        $branch = $context->branch();
 
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->first();
-        $branch = DB::table('branches')->where('is_active', true)->orderBy('id')->first();
+        $stats = [
+            'purchase_requests' => DB::table('purchase_requests')->where('company_id', $company->id)->count(),
+            'purchase_orders' => DB::table('purchase_orders')->where('company_id', $company->id)->count(),
+            'items' => DB::table('items')->where('company_id', $company->id)->whereNull('deleted_at')->count(),
+            'suppliers' => DB::table('suppliers')->where('company_id', $company->id)->whereNull('deleted_at')->count(),
+            'stock_movements' => DB::table('stock_movements')->where('company_id', $company->id)->count(),
+            'goods_receipts' => DB::table('goods_receipts')->where('company_id', $company->id)->count(),
+            'stock_opnames' => DB::table('stock_opnames')->where('company_id', $company->id)->count(),
+            'stock_on_hand_value' => DB::table('stock_movements')->where('company_id', $company->id)->sum('total_cost'),
+            'budgets' => DB::table('budgets')->where('company_id', $company->id)->count(),
+            'assets' => DB::table('asset_registers')->where('company_id', $company->id)->whereNull('deleted_at')->count(),
+            'open_maintenance' => DB::table('asset_maintenances')->where('company_id', $company->id)->whereIn('status', ['open', 'in_progress'])->whereNull('deleted_at')->count(),
+            'pending_approvals' => DB::table('purchase_requests')->where('company_id', $company->id)->where('status', 'submitted')->count()
+                + DB::table('purchase_orders')->where('company_id', $company->id)->where('status', 'submitted')->count(),
+        ];
 
         $executive = [
             [
                 'label' => 'Purchasing Flow',
-                'value' => DB::table('purchase_orders')->whereIn('status', ['approved', 'partial_received', 'received'])->count(),
-                'total' => max(1, DB::table('purchase_orders')->count()),
+                'value' => DB::table('purchase_orders')->where('company_id', $company->id)->whereIn('status', ['approved', 'partial_received', 'received'])->count(),
+                'total' => max(1, DB::table('purchase_orders')->where('company_id', $company->id)->count()),
                 'caption' => 'PO approved / receiving / completed',
             ],
             [
                 'label' => 'Budget Usage',
-                'value' => (float) DB::table('budget_lines')->selectRaw('COALESCE(SUM(committed_amount + actual_amount), 0) as total')->value('total'),
-                'total' => max(1, (float) DB::table('budget_lines')->sum('allocated_amount')),
+                'value' => (float) DB::table('budget_lines')->join('budgets', 'budgets.id', '=', 'budget_lines.budget_id')->where('budgets.company_id', $company->id)->selectRaw('COALESCE(SUM(budget_lines.committed_amount + budget_lines.actual_amount), 0) as total')->value('total'),
+                'total' => max(1, (float) DB::table('budget_lines')->join('budgets', 'budgets.id', '=', 'budget_lines.budget_id')->where('budgets.company_id', $company->id)->sum('budget_lines.allocated_amount')),
                 'caption' => 'Committed + actual vs allocated',
             ],
             [
                 'label' => 'Asset Health',
-                'value' => DB::table('asset_registers')->where('status', 'active')->whereNull('deleted_at')->count(),
-                'total' => max(1, DB::table('asset_registers')->whereNull('deleted_at')->count()),
+                'value' => DB::table('asset_registers')->where('company_id', $company->id)->where('status', 'active')->whereNull('deleted_at')->count(),
+                'total' => max(1, DB::table('asset_registers')->where('company_id', $company->id)->whereNull('deleted_at')->count()),
                 'caption' => 'Active assets vs total registered',
             ],
             [
                 'label' => 'Maintenance Closure',
-                'value' => DB::table('asset_maintenances')->where('status', 'completed')->whereNull('deleted_at')->count(),
-                'total' => max(1, DB::table('asset_maintenances')->whereNull('deleted_at')->count()),
+                'value' => DB::table('asset_maintenances')->where('company_id', $company->id)->where('status', 'completed')->whereNull('deleted_at')->count(),
+                'total' => max(1, DB::table('asset_maintenances')->where('company_id', $company->id)->whereNull('deleted_at')->count()),
                 'caption' => 'Completed work orders',
             ],
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
+use App\Support\CompanyContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -444,6 +445,6 @@ class GoodsReceiptController extends Controller
 
     private function company(): object
     {
-        return DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
+        return app(CompanyContext::class)->current();
     }
 }

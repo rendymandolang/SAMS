@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -57,7 +58,7 @@ class InventoryMovementReportController extends Controller
 
     private function data(Request $request): array
     {
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
+        $company = app(CompanyContext::class)->current();
 
         $filters = [
             'date_from' => $request->input('date_from', now()->startOfMonth()->format('Y-m-d')),

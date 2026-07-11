@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -10,15 +11,19 @@ class ReportCenterController extends Controller
     public function __invoke(): View
     {
         $user = auth()->user();
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->first();
+        $company = app(CompanyContext::class)->current();
 
         $reports = collect($this->reports())
             ->filter(fn (array $report) => $user->hasAnyRole($report['roles']))
             ->values();
+        $summary = $this->summary((int) $company->id);
+        $summary['ready_reports'] = $reports->count();
+        $summary['export_ready'] = $reports->count();
+        $summary['print_ready'] = $reports->count();
 
         return view('reports.index', [
             'reports' => $reports,
-            'summary' => $this->summary((int) ($company->id ?? 0)),
+            'summary' => $summary,
         ]);
     }
 
@@ -26,9 +31,8 @@ class ReportCenterController extends Controller
     {
         return [
             [
-                'title' => 'Budget Control',
-                'category' => 'Finance Control',
-                'description' => 'Pantau allocated, committed, actual, remaining, dan risiko budget per department/account.',
+                'name_key' => 'budget_control',
+                'category_key' => 'finance',
                 'route' => 'budget-control.index',
                 'print_route' => 'budget-control.print',
                 'export_route' => 'budget-control.export',
@@ -36,9 +40,8 @@ class ReportCenterController extends Controller
                 'roles' => ['super_admin', 'finance', 'purchasing'],
             ],
             [
-                'title' => 'Purchasing Cycle',
-                'category' => 'Procurement',
-                'description' => 'Tracking PR ke PO sampai GR, lengkap dengan status cycle, variance, dan receipt progress.',
+                'name_key' => 'purchasing_cycle',
+                'category_key' => 'procurement',
                 'route' => 'reports.purchasing.cycle',
                 'print_route' => 'reports.purchasing.cycle.print',
                 'export_route' => 'reports.purchasing.cycle.export',
@@ -46,9 +49,8 @@ class ReportCenterController extends Controller
                 'roles' => ['super_admin', 'finance', 'purchasing'],
             ],
             [
-                'title' => 'Supplier Performance',
-                'category' => 'Procurement',
-                'description' => 'Scorecard supplier berdasarkan nilai order, completion rate, reject rate, dan watch list.',
+                'name_key' => 'supplier_performance',
+                'category_key' => 'procurement',
                 'route' => 'reports.purchasing.suppliers',
                 'print_route' => 'reports.purchasing.suppliers.print',
                 'export_route' => 'reports.purchasing.suppliers.export',
@@ -56,9 +58,8 @@ class ReportCenterController extends Controller
                 'roles' => ['super_admin', 'finance', 'purchasing'],
             ],
             [
-                'title' => 'Laporan Mutasi Stok',
-                'category' => 'Inventory Ledger',
-                'description' => 'Ledger movement barang dengan opening, masuk, keluar, saldo berjalan, dan nilai movement.',
+                'name_key' => 'inventory_movement',
+                'category_key' => 'inventory',
                 'route' => 'reports.inventory.movements',
                 'print_route' => null,
                 'export_route' => 'reports.inventory.movements.export',
@@ -66,9 +67,8 @@ class ReportCenterController extends Controller
                 'roles' => ['super_admin', 'finance', 'purchasing', 'warehouse', 'staff'],
             ],
             [
-                'title' => 'Asset Maintenance History',
-                'category' => 'Asset Intelligence',
-                'description' => 'Histori work order asset, biaya, overdue, ranking asset, dan status kontrol maintenance.',
+                'name_key' => 'asset_maintenance_history',
+                'category_key' => 'assets',
                 'route' => 'reports.assets.maintenance-history',
                 'print_route' => 'reports.assets.maintenance-history.print',
                 'export_route' => 'reports.assets.maintenance-history.export',
@@ -90,8 +90,8 @@ class ReportCenterController extends Controller
         }
 
         $budgetAlerts = DB::table('budget_lines')
-            ->where('company_id', $companyId)
-            ->whereNull('deleted_at')
+            ->join('budgets', 'budgets.id', '=', 'budget_lines.budget_id')
+            ->where('budgets.company_id', $companyId)
             ->whereRaw('(allocated_amount - committed_amount - actual_amount) < 0')
             ->count();
 

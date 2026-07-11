@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use App\Support\CsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -66,8 +67,9 @@ class PurchasingCycleReportController extends Controller
 
     private function data(Request $request): array
     {
-        $company = DB::table('companies')->where('is_active', true)->orderBy('id')->firstOrFail();
-        $branch = DB::table('branches')->where('is_active', true)->orderBy('id')->first();
+        $context = app(CompanyContext::class);
+        $company = $context->current();
+        $branch = $context->branch();
 
         $filters = [
             'date_from' => $request->input('date_from', now()->startOfMonth()->format('Y-m-d')),

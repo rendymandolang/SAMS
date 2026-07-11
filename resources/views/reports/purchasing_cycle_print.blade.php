@@ -36,7 +36,7 @@
     <main class="page">
         <section class="header">
             <div class="brand">
-                <div class="brand-mark">S</div>
+                @include('partials.print-brand-mark')
                 <div>
                     <h1>{{ $company->legal_name ?: $company->name }}</h1>
                     <p class="muted" style="margin-bottom:4px;">{{ $branch?->name ?? 'Head Office' }}</p>

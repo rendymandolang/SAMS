@@ -67,14 +67,14 @@ class ExampleTest extends TestCase
         $response = $this->actingAs($user)->get('/reports');
 
         $response->assertOk();
-        $response->assertSee('Report Center');
-        $response->assertSee('Budget Control');
-        $response->assertSee('Purchasing Cycle');
-        $response->assertSee('Supplier Performance');
+        $response->assertSee('Pusat Laporan');
+        $response->assertSee('Kontrol Anggaran');
+        $response->assertSee('Siklus Pembelian');
+        $response->assertSee('Kinerja Pemasok');
         $response->assertSee('Laporan Mutasi Stok');
-        $response->assertSee('Asset Maintenance History');
-        $response->assertSee('Export CSV');
-        $response->assertSee('AI-ready foundation');
+        $response->assertSee('Riwayat Pemeliharaan Aset');
+        $response->assertSee('Ekspor CSV');
+        $response->assertSee('Fondasi Pelaporan Siap AI');
     }
 
     public function test_super_admin_can_manage_users(): void
