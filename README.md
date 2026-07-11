@@ -86,6 +86,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Transaction state guard dan row locking untuk mencegah submit, approve, reject, atau posting ganda pada PR, PO, GR, dan Stock Opname
 - Idempotency key stock movement per baris Goods Receipt dan Stock Opname
 - Transaction period locking per perusahaan dan modul untuk menutup periode Procurement atau Inventory beserta audit buka/tutup periode
+- Reversal Goods Receipt dan Stock Opname berbasis contra movement tanpa menghapus ledger, termasuk pemulihan budget dan received quantity
 
 Blueprint database tersedia di
 [`docs/SAMS_DATABASE_ERD_V1.md`](docs/SAMS_DATABASE_ERD_V1.md).
@@ -132,7 +133,7 @@ Urutan kerja berikutnya:
 
 1. Role, permission, dan data scope yang lebih detail per perusahaan, modul, cabang, serta departemen.
 2. Module entitlement untuk menentukan modul yang dibeli dan diaktifkan setiap perusahaan.
-3. Transaction hardening lanjutan: reversal dokumen (state machine, idempotency posting, dan period locking sudah tersedia).
+3. Transaction hardening lanjutan: approval tambahan untuk reversal bernilai besar dan closing checklist (state machine, idempotency, period locking, serta reversal inventory sudah tersedia).
 4. API v1 dan mobile-ready authentication.
 5. Inventory costing, asset lifecycle, accounting journal kernel, lalu POS.
 

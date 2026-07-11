@@ -20,6 +20,13 @@
                             <button class="button inline" type="submit">Post GR</button>
                         </form>
                     @endif
+                    @if ($header->status === 'posted' && auth()->user()->hasPermission('inventory.gr.manage'))
+                        <form method="POST" action="{{ route('goods-receipts.reverse', $header->id) }}" style="display:flex;gap:8px;align-items:center;">
+                            @csrf
+                            <input name="reversal_reason" placeholder="Alasan reversal" required maxlength="1000">
+                            <button class="button secondary inline" type="submit">Reverse GR</button>
+                        </form>
+                    @endif
                 </div>
             </header>
 

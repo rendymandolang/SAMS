@@ -241,6 +241,82 @@ class GoodsReceiptController extends Controller
             ->with('status', 'Goods Receipt berhasil diposting dan stok masuk gudang.');
     }
 
+    public function reverse(Request $request, int $goodsReceipt): RedirectResponse
+    {
+        $header = $this->findGoodsReceipt($goodsReceipt);
+        $validated = $request->validate(['reversal_reason' => ['required', 'string', 'max:1000']]);
+
+        $reversed = DB::transaction(function () use ($header, $validated): bool {
+            $lockedHeader = DB::table('goods_receipts')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('goods_receipt', $lockedHeader->status, 'reversed')) {
+                return false;
+            }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'inventory', $lockedHeader->received_at);
+            $now = now();
+            $items = DB::table('goods_receipt_items')->where('goods_receipt_id', $lockedHeader->id)->get();
+
+            $registeredAssets = DB::table('asset_registers')
+                ->whereIn('goods_receipt_item_id', $items->pluck('id'))
+                ->whereNull('deleted_at')
+                ->exists();
+            if ($registeredAssets) {
+                throw ValidationException::withMessages([
+                    'reversal_reason' => 'Goods Receipt tidak dapat direversal karena salah satu item sudah terdaftar sebagai aset.',
+                ]);
+            }
+
+            foreach ($items as $item) {
+                $quantity = (float) $item->accepted_quantity;
+                $purchaseOrderItem = DB::table('purchase_order_items')->where('id', $item->purchase_order_item_id)->lockForUpdate()->first();
+                if ($purchaseOrderItem) {
+                    DB::table('purchase_order_items')->where('id', $purchaseOrderItem->id)->update([
+                        'received_quantity' => max(0, (float) $purchaseOrderItem->received_quantity - $quantity),
+                        'updated_at' => $now,
+                    ]);
+                }
+
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $this->reverseBudgetLine($item, $now);
+                DB::table('stock_movements')->insert([
+                    'company_id' => $lockedHeader->company_id,
+                    'branch_id' => $lockedHeader->branch_id,
+                    'storage_location_id' => $lockedHeader->storage_location_id,
+                    'item_id' => $item->item_id,
+                    'movement_type' => 'goods_receipt_reversal',
+                    'movement_at' => $now,
+                    'quantity' => -$quantity,
+                    'unit_cost' => $item->unit_cost,
+                    'total_cost' => -($quantity * (float) $item->unit_cost),
+                    'source_type' => 'goods_receipt',
+                    'source_id' => $lockedHeader->id,
+                    'source_line_id' => $item->id,
+                    'created_by' => auth()->id(),
+                    'notes' => 'Reversal '.$lockedHeader->document_number.': '.$validated['reversal_reason'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('goods_receipts')->where('id', $lockedHeader->id)->update([
+                'status' => 'reversed',
+                'reversed_at' => $now,
+                'reversed_by' => auth()->id(),
+                'reversal_reason' => $validated['reversal_reason'],
+                'updated_at' => $now,
+            ]);
+            $this->refreshPurchaseOrderReceiptStatus((int) $lockedHeader->purchase_order_id);
+            AuditLogger::log('goods_receipt_reversed', 'goods_receipt', (int) $lockedHeader->id, ['status' => 'posted'], ['status' => 'reversed', 'reason' => $validated['reversal_reason']], (int) $lockedHeader->company_id);
+
+            return true;
+        });
+
+        return redirect()->route('goods-receipts.show', $header->id)->with('status', $reversed ? 'Goods Receipt berhasil direversal.' : 'Hanya Goods Receipt posted yang bisa direversal.');
+    }
+
     private function actualizeBudgetLine(object $goodsReceiptItem, $now): void
     {
         $purchaseOrderItem = DB::table('purchase_order_items')
@@ -281,6 +357,27 @@ class GoodsReceiptController extends Controller
                 'actual_amount' => (float) $budgetLine->actual_amount + $actualAmount,
                 'updated_at' => $now,
             ]);
+    }
+
+    private function reverseBudgetLine(object $goodsReceiptItem, $now): void
+    {
+        $purchaseOrderItem = DB::table('purchase_order_items')->where('id', $goodsReceiptItem->purchase_order_item_id)->first();
+        $purchaseRequestItem = $purchaseOrderItem?->purchase_request_item_id
+            ? DB::table('purchase_request_items')->where('id', $purchaseOrderItem->purchase_request_item_id)->first()
+            : null;
+        if (! $purchaseRequestItem?->budget_line_id) {
+            return;
+        }
+
+        $amount = (float) $goodsReceiptItem->accepted_quantity * (float) $goodsReceiptItem->unit_cost;
+        $budgetLine = DB::table('budget_lines')->where('id', $purchaseRequestItem->budget_line_id)->lockForUpdate()->first();
+        if ($budgetLine && $amount > 0) {
+            DB::table('budget_lines')->where('id', $budgetLine->id)->update([
+                'committed_amount' => (float) $budgetLine->committed_amount + $amount,
+                'actual_amount' => max(0, (float) $budgetLine->actual_amount - $amount),
+                'updated_at' => $now,
+            ]);
+        }
     }
 
     private function validatedLines(array $inputLines, int $purchaseOrderId)

@@ -126,6 +126,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/goods-receipts/create/from-po/{purchaseOrder}', [GoodsReceiptController::class, 'createFromPurchaseOrder'])->name('goods-receipts.create-from-po');
         Route::post('/goods-receipts/from-po/{purchaseOrder}', [GoodsReceiptController::class, 'storeFromPurchaseOrder'])->name('goods-receipts.store-from-po');
         Route::post('/goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])->name('goods-receipts.post');
+        Route::post('/goods-receipts/{goodsReceipt}/reverse', [GoodsReceiptController::class, 'reverse'])->name('goods-receipts.reverse');
     });
 
     Route::middleware(['module:assets', 'permission:assets.register.view'])->group(function () {
@@ -164,6 +165,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/stock-opnames/create', [StockOpnameController::class, 'create'])->name('stock-opnames.create');
         Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
         Route::post('/stock-opnames/{stockOpname}/post', [StockOpnameController::class, 'post'])->name('stock-opnames.post');
+        Route::post('/stock-opnames/{stockOpname}/reverse', [StockOpnameController::class, 'reverse'])->name('stock-opnames.reverse');
     });
 
     Route::get('/reports', ReportCenterController::class)->middleware(['module:reporting', 'permission:reporting.view'])->name('reports.index');

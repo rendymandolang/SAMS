@@ -12,9 +12,11 @@ class DocumentStateMachineTest extends TestCase
         $this->assertTrue(DocumentStateMachine::allows('purchase_request', 'draft', 'submitted'));
         $this->assertTrue(DocumentStateMachine::allows('purchase_request', 'submitted', 'approved'));
         $this->assertTrue(DocumentStateMachine::allows('purchase_request', 'submitted', 'rejected'));
-        $this->assertTrue(DocumentStateMachine::allows('purchase_order', 'approved', 'partially_received'));
+        $this->assertTrue(DocumentStateMachine::allows('purchase_order', 'approved', 'partial_received'));
         $this->assertTrue(DocumentStateMachine::allows('goods_receipt', 'draft', 'posted'));
         $this->assertTrue(DocumentStateMachine::allows('stock_opname', 'draft', 'posted'));
+        $this->assertTrue(DocumentStateMachine::allows('goods_receipt', 'posted', 'reversed'));
+        $this->assertTrue(DocumentStateMachine::allows('stock_opname', 'posted', 'reversed'));
 
         $this->assertFalse(DocumentStateMachine::allows('purchase_request', 'approved', 'submitted'));
         $this->assertFalse(DocumentStateMachine::allows('goods_receipt', 'posted', 'posted'));

@@ -248,6 +248,60 @@ class StockOpnameController extends Controller
             ->with('status', 'Stock Opname berhasil diposting dan selisih stok sudah masuk sebagai adjustment.');
     }
 
+    public function reverse(Request $request, int $stockOpname): RedirectResponse
+    {
+        $header = $this->findStockOpname($stockOpname);
+        $validated = $request->validate(['reversal_reason' => ['required', 'string', 'max:1000']]);
+
+        $reversed = DB::transaction(function () use ($header, $validated): bool {
+            $lockedHeader = DB::table('stock_opnames')->where('id', $header->id)->lockForUpdate()->first();
+            if (! $lockedHeader || ! DocumentStateMachine::allows('stock_opname', $lockedHeader->status, 'reversed')) {
+                return false;
+            }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'inventory', $lockedHeader->count_date);
+            $now = now();
+            $items = DB::table('stock_opname_items')->where('stock_opname_id', $lockedHeader->id)->get();
+            foreach ($items as $item) {
+                $quantity = -(float) $item->variance_quantity;
+                if ($quantity == 0.0) {
+                    continue;
+                }
+                DB::table('stock_movements')->insert([
+                    'company_id' => $lockedHeader->company_id,
+                    'branch_id' => $lockedHeader->branch_id,
+                    'storage_location_id' => $lockedHeader->storage_location_id,
+                    'item_id' => $item->item_id,
+                    'movement_type' => 'stock_opname_reversal',
+                    'movement_at' => $now,
+                    'quantity' => $quantity,
+                    'unit_cost' => $item->unit_cost,
+                    'total_cost' => $quantity * (float) $item->unit_cost,
+                    'source_type' => 'stock_opname',
+                    'source_id' => $lockedHeader->id,
+                    'source_line_id' => $item->id,
+                    'created_by' => auth()->id(),
+                    'notes' => 'Reversal '.$lockedHeader->document_number.': '.$validated['reversal_reason'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('stock_opnames')->where('id', $lockedHeader->id)->update([
+                'status' => 'reversed',
+                'reversed_at' => $now,
+                'reversed_by' => auth()->id(),
+                'reversal_reason' => $validated['reversal_reason'],
+                'updated_at' => $now,
+            ]);
+            AuditLogger::log('stock_opname_reversed', 'stock_opname', (int) $lockedHeader->id, ['status' => 'posted'], ['status' => 'reversed', 'reason' => $validated['reversal_reason']], (int) $lockedHeader->company_id);
+
+            return true;
+        });
+
+        return redirect()->route('stock-opnames.show', $header->id)->with('status', $reversed ? 'Stock Opname berhasil direversal.' : 'Hanya Stock Opname posted yang bisa direversal.');
+    }
+
     private function findStockOpname(int $stockOpname): object
     {
         $company = $this->company();

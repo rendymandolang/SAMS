@@ -1058,6 +1058,29 @@ class ExampleTest extends TestCase
         $response->assertSee('Diketahui oleh');
     }
 
+    public function test_posted_goods_receipt_can_be_reversed_without_deleting_ledger_history(): void
+    {
+        $this->test_goods_receipt_can_be_created_and_posted_from_approved_purchase_order();
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $goodsReceipt = DB::table('goods_receipts')->firstOrFail();
+        $purchaseOrderItem = DB::table('purchase_order_items')->firstOrFail();
+        $budgetLine = DB::table('budget_lines')->where('account_code', 'PUR-FNB')->firstOrFail();
+
+        $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/reverse', [
+            'reversal_reason' => 'Incorrect supplier delivery',
+        ])->assertRedirect('/goods-receipts/'.$goodsReceipt->id);
+
+        $this->assertDatabaseHas('goods_receipts', ['id' => $goodsReceipt->id, 'status' => 'reversed', 'reversal_reason' => 'Incorrect supplier delivery']);
+        $this->assertEquals(0.0, (float) DB::table('purchase_order_items')->where('id', $purchaseOrderItem->id)->value('received_quantity'));
+        $this->assertEquals(0.0, (float) DB::table('budget_lines')->where('id', $budgetLine->id)->value('actual_amount'));
+        $this->assertEquals(145000.0, (float) DB::table('budget_lines')->where('id', $budgetLine->id)->value('committed_amount'));
+        $this->assertEquals(0.0, (float) DB::table('stock_movements')->where('source_type', 'goods_receipt')->where('source_id', $goodsReceipt->id)->sum('quantity'));
+        $this->assertDatabaseHas('audit_logs', ['event' => 'goods_receipt_reversed', 'auditable_id' => $goodsReceipt->id]);
+
+        $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/reverse', ['reversal_reason' => 'Again']);
+        $this->assertSame(2, DB::table('stock_movements')->where('source_type', 'goods_receipt')->where('source_id', $goodsReceipt->id)->count());
+    }
+
     public function test_asset_register_can_create_and_show_asset(): void
     {
         $this->seed();
@@ -1282,6 +1305,24 @@ class ExampleTest extends TestCase
         $goodsReceiptResponse->assertOk();
         $goodsReceiptResponse->assertSee($asset->asset_number);
         $goodsReceiptResponse->assertSee('ITM-LAPTOP-OPS');
+    }
+
+    public function test_goods_receipt_with_registered_asset_cannot_be_reversed(): void
+    {
+        $this->test_asset_can_be_registered_from_posted_goods_receipt_item();
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $goodsReceipt = DB::table('goods_receipts')->firstOrFail();
+
+        $this->actingAs($user)->post('/goods-receipts/'.$goodsReceipt->id.'/reverse', [
+            'reversal_reason' => 'Should be blocked',
+        ])->assertSessionHasErrors('reversal_reason');
+
+        $this->assertDatabaseHas('goods_receipts', ['id' => $goodsReceipt->id, 'status' => 'posted']);
+        $this->assertDatabaseMissing('stock_movements', [
+            'source_type' => 'goods_receipt',
+            'source_id' => $goodsReceipt->id,
+            'movement_type' => 'goods_receipt_reversal',
+        ]);
     }
 
     public function test_asset_maintenance_can_be_created_completed_and_printed(): void
@@ -1642,6 +1683,24 @@ class ExampleTest extends TestCase
         $response->assertSee('Dihitung oleh');
         $response->assertSee('Diperiksa oleh');
         $response->assertSee('Disetujui oleh');
+    }
+
+    public function test_posted_stock_opname_can_be_reversed_without_deleting_adjustment_history(): void
+    {
+        $this->test_stock_opname_can_be_created_and_posted_as_stock_adjustment();
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $stockOpname = DB::table('stock_opnames')->firstOrFail();
+
+        $this->actingAs($user)->post('/stock-opnames/'.$stockOpname->id.'/reverse', [
+            'reversal_reason' => 'Physical recount required',
+        ])->assertRedirect('/stock-opnames/'.$stockOpname->id);
+
+        $this->assertDatabaseHas('stock_opnames', ['id' => $stockOpname->id, 'status' => 'reversed', 'reversal_reason' => 'Physical recount required']);
+        $this->assertEquals(0.0, (float) DB::table('stock_movements')->where('source_type', 'stock_opname')->where('source_id', $stockOpname->id)->sum('quantity'));
+        $this->assertDatabaseHas('audit_logs', ['event' => 'stock_opname_reversed', 'auditable_id' => $stockOpname->id]);
+
+        $this->actingAs($user)->post('/stock-opnames/'.$stockOpname->id.'/reverse', ['reversal_reason' => 'Again']);
+        $this->assertSame(2, DB::table('stock_movements')->where('source_type', 'stock_opname')->where('source_id', $stockOpname->id)->count());
     }
 
     public function test_inventory_movement_report_shows_goods_receipt_and_stock_opname_adjustment(): void
