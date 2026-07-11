@@ -13,6 +13,7 @@ return [
     ],
     'items' => [
         'approval_center' => 'Approval Center',
+        'ai_insights' => 'AI Insight Center',
         'access_control' => 'Access & Module Control',
         'asset_maintenance' => 'Asset Maintenance',
         'asset_register' => 'Asset Register',

@@ -25,6 +25,7 @@
     $canProcurementReport = $user->canAccessModule('reporting') && $user->canAccessModule('procurement') && $user->hasPermission('reporting.procurement.view');
     $canBudgeting = $user->canAccessModule('budgeting') && $user->hasPermission('budgeting.view');
     $canReporting = $canReportCenter || $canInventoryReport || $canAssetReport || $canProcurementReport;
+    $canIntelligence = $user->canAccessModule('intelligence') && $user->hasPermission('intelligence.view');
     $canMaster = $user->hasPermission('core.master.view');
     $canApprovalCenter = $user->canAccessModule('procurement') && $user->hasPermission('core.approvals.view') && ($user->hasPermission('procurement.pr.approve') || $user->hasPermission('procurement.po.approve'));
     $canAdministration = $canApprovalCenter || $user->hasPermission('core.users.manage') || $user->hasPermission('core.audit.view') || $user->hasPermission('core.settings.manage') || $user->hasPermission('core.access.manage');
@@ -55,6 +56,12 @@
                 <x-icon class="nav-icon" name="dashboard" />
                 <span>{{ __('navigation.dashboard') }}</span>
             </a>
+            @if ($canIntelligence)
+                <a class="nav-link {{ request()->routeIs('ai-insights.*') ? 'active' : '' }}" href="{{ route('ai-insights.index') }}">
+                    <x-icon class="nav-icon" name="sparkles" />
+                    <span>{{ __('navigation.items.ai_insights') }}</span>
+                </a>
+            @endif
         </div>
 
         @if ($canProcurement)

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AccessControlController;
+use App\Http\Controllers\AiInsightController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetMaintenanceReportController;
 use App\Http\Controllers\AssetRegisterController;
@@ -71,6 +72,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/approvals', ApprovalCenterController::class)
         ->middleware(['module:core', 'module:procurement', 'permission:core.approvals.view'])
         ->name('approvals.index');
+    Route::get('/ai-insights', [AiInsightController::class, 'index'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('ai-insights.index');
+    Route::post('/ai-insights/generate', [AiInsightController::class, 'generate'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.generate');
     Route::middleware(['module:core', 'permission:core.attachments.manage'])->group(function () {
         Route::post('/attachments/{type}/{id}', [AttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');

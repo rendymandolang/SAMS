@@ -2,7 +2,10 @@
 
 @section('title', __('navigation.items.period_locks'))
 
-@section('content')
+@section('body')
+    <div class="app-shell">
+        @include('partials.sidebar')
+        <main class="main">
     <div class="page-header">
         <div>
             <p class="eyebrow">{{ $company->name }}</p>
@@ -49,5 +52,7 @@
                 </table>
             </div>
         </section>
+    </div>
+        </main>
     </div>
 @endsection

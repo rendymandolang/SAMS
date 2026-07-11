@@ -17,7 +17,7 @@ final class ModuleCatalog
             'accounting' => ['name' => 'Accounting', 'description' => 'General ledger, AP, AR, cash, bank, tax, and closing.', 'status' => 'planned', 'sort_order' => 70],
             'pos' => ['name' => 'Point of Sale', 'description' => 'Outlet, cashier, order, payment, shift, and sales control.', 'status' => 'planned', 'sort_order' => 80],
             'mobile' => ['name' => 'Mobile Operations', 'description' => 'Approval, QR asset, stock count, and maintenance mobile tools.', 'status' => 'planned', 'sort_order' => 90],
-            'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'planned', 'sort_order' => 100],
+            'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'active', 'sort_order' => 100],
         ];
     }
 
@@ -58,6 +58,9 @@ final class ModuleCatalog
             'reporting.view' => self::permission('reporting', 'Open report center and inventory reports', 10),
             'reporting.procurement.view' => self::permission('reporting', 'View procurement and supplier reports', 20),
             'reporting.assets.view' => self::permission('reporting', 'View asset maintenance reports', 30),
+
+            'intelligence.view' => self::permission('intelligence', 'View AI operational insights', 10),
+            'intelligence.generate' => self::permission('intelligence', 'Generate AI operational insights', 20),
         ];
     }
 
@@ -86,6 +89,7 @@ final class ModuleCatalog
                 'inventory.gr.view', 'inventory.stock.view',
                 'assets.register.view', 'assets.register.manage', 'assets.maintenance.view', 'assets.maintenance.manage',
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
+                'intelligence.view', 'intelligence.generate',
             ],
             'warehouse' => [
                 'core.dashboard.view', 'core.master.view', 'core.master.manage', 'core.attachments.manage',
@@ -93,11 +97,13 @@ final class ModuleCatalog
                 'inventory.gr.view', 'inventory.gr.manage', 'inventory.stock.view', 'inventory.stock.manage',
                 'assets.register.view', 'assets.register.manage', 'assets.maintenance.view', 'assets.maintenance.manage',
                 'reporting.view', 'reporting.assets.view',
+                'intelligence.view',
             ],
             'finance' => [
                 'core.dashboard.view', 'core.master.view', 'core.approvals.view', 'core.approvals.act', 'core.attachments.manage',
                 'procurement.pr.view', 'procurement.pr.approve', 'procurement.po.view', 'procurement.po.approve',
                 'inventory.gr.view', 'inventory.stock.view',
+                'intelligence.view', 'intelligence.generate',
                 'assets.register.view', 'assets.maintenance.view',
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
             ],

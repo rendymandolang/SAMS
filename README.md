@@ -87,6 +87,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Idempotency key stock movement per baris Goods Receipt dan Stock Opname
 - Transaction period locking per perusahaan dan modul untuk menutup periode Procurement atau Inventory beserta audit buka/tutup periode
 - Reversal Goods Receipt dan Stock Opname berbasis contra movement tanpa menghapus ledger, termasuk pemulihan budget dan received quantity
+- AI Insight Center read-only dengan local analytics bawaan, provider OpenAI opsional, company scope, permission, usage metadata, dan audit trail
 
 Blueprint database tersedia di
 [`docs/SAMS_DATABASE_ERD_V1.md`](docs/SAMS_DATABASE_ERD_V1.md).
@@ -154,3 +155,7 @@ dipertahankan akan diekspor, diverifikasi, lalu diimpor melalui prosedur migrasi
 
 Checklist lengkap backup, deployment, monitoring, verifikasi, dan rollback tersedia di
 [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md).
+
+## Local-First Product Strategy
+
+Seluruh modul SuperSoft/SAMS, termasuk AI, diselesaikan dan diuji di lokal. VPS dipakai setelah modul siap sebagai lingkungan staging/production, bukan sebagai tempat pembangunan fitur. Arsitektur dan guardrail AI tersedia di [`docs/AI_INSIGHT_CENTER.md`](docs/AI_INSIGHT_CENTER.md).
