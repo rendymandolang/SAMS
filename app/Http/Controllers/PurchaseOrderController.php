@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
 use App\Support\DocumentStateMachine;
+use App\Support\TransactionPeriodLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -161,6 +162,8 @@ class PurchaseOrderController extends Controller
             if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_order', $lockedHeader->status, 'submitted')) {
                 return false;
             }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'procurement', $lockedHeader->order_date);
 
             DB::table('purchase_orders')->where('id', $lockedHeader->id)->update(['status' => 'submitted', 'updated_at' => now()]);
             AuditLogger::log('purchase_order_submitted', 'purchase_order', (int) $lockedHeader->id, ['status' => $lockedHeader->status], ['status' => 'submitted'], (int) $lockedHeader->company_id);

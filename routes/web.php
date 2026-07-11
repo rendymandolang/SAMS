@@ -23,6 +23,7 @@ use App\Http\Controllers\ReportCenterController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\SupplierPerformanceReportController;
+use App\Http\Controllers\TransactionPeriodLockController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['module:core', 'permission:core.settings.manage'])->group(function () {
         Route::get('/settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
         Route::put('/settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+        Route::get('/settings/period-locks', [TransactionPeriodLockController::class, 'index'])->name('settings.period-locks.index');
+        Route::post('/settings/period-locks', [TransactionPeriodLockController::class, 'store'])->name('settings.period-locks.store');
+        Route::delete('/settings/period-locks/{periodLock}', [TransactionPeriodLockController::class, 'destroy'])->name('settings.period-locks.destroy');
     });
     Route::middleware(['module:core', 'permission:core.access.manage'])->group(function () {
         Route::get('/settings/access-control', [AccessControlController::class, 'index'])->name('access-control.index');

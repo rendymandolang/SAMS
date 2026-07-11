@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
 use App\Support\DocumentStateMachine;
+use App\Support\TransactionPeriodLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -187,6 +188,8 @@ class StockOpnameController extends Controller
             if (! $lockedHeader || ! DocumentStateMachine::allows('stock_opname', $lockedHeader->status, 'posted')) {
                 return false;
             }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'inventory', $lockedHeader->count_date);
 
             $now = now();
             $items = DB::table('stock_opname_items')

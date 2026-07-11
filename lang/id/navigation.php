@@ -29,6 +29,7 @@ return [
         'purchasing_cycle' => 'Siklus Pembelian',
         'report_center' => 'Pusat Laporan',
         'company_settings' => 'Pengaturan Perusahaan',
+        'period_locks' => 'Kunci Periode Transaksi',
         'settings' => 'Pengaturan',
         'stock_on_hand' => 'Stok Tersedia',
         'stock_opname' => 'Stok Opname',

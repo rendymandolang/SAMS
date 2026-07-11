@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
 use App\Support\DocumentStateMachine;
+use App\Support\TransactionPeriodLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,6 +182,8 @@ class GoodsReceiptController extends Controller
             if (! $lockedHeader || ! DocumentStateMachine::allows('goods_receipt', $lockedHeader->status, 'posted')) {
                 return false;
             }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'inventory', $lockedHeader->received_at);
 
             $now = now();
             $items = DB::table('goods_receipt_items')

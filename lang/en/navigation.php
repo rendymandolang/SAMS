@@ -29,6 +29,7 @@ return [
         'purchasing_cycle' => 'Purchasing Cycle',
         'report_center' => 'Report Center',
         'company_settings' => 'Company Settings',
+        'period_locks' => 'Transaction Period Locks',
         'settings' => 'Settings',
         'stock_on_hand' => 'Stock On Hand',
         'stock_opname' => 'Stock Opname',

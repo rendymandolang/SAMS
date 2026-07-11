@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
 use App\Support\DocumentStateMachine;
+use App\Support\TransactionPeriodLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -276,6 +277,8 @@ class PurchaseRequestController extends Controller
             if (! $lockedHeader || ! DocumentStateMachine::allows('purchase_request', $lockedHeader->status, 'submitted')) {
                 return false;
             }
+
+            TransactionPeriodLock::ensureOpen((int) $lockedHeader->company_id, 'procurement', $lockedHeader->request_date);
 
             $this->commitBudget($lockedHeader->id);
             $this->createApprovalRequest($lockedHeader->id, (int) $lockedHeader->company_id);
