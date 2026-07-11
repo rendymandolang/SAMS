@@ -58,6 +58,25 @@ class ExampleTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_report_center_can_be_rendered_for_authenticated_user(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $response = $this->actingAs($user)->get('/reports');
+
+        $response->assertOk();
+        $response->assertSee('Report Center');
+        $response->assertSee('Budget Control');
+        $response->assertSee('Purchasing Cycle');
+        $response->assertSee('Supplier Performance');
+        $response->assertSee('Laporan Mutasi Stok');
+        $response->assertSee('Asset Maintenance History');
+        $response->assertSee('Export CSV');
+        $response->assertSee('AI-ready foundation');
+    }
+
     public function test_super_admin_can_manage_users(): void
     {
         $this->seed();

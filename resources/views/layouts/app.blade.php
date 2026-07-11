@@ -236,6 +236,7 @@
         }
         .badge.next { color: #92400e; background: #fef3c7; }
         .quick-actions { display: grid; gap: 12px; }
+        .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
         .quick-action {
             border: 1px dashed #c7d2fe;
             border-radius: 16px;
@@ -373,6 +374,7 @@
             .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .line-card, .line-card.budgeted { grid-template-columns: 1fr; }
+            .report-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 620px) {

@@ -15,6 +15,7 @@ use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\PurchasingCycleReportController;
+use App\Http\Controllers\ReportCenterController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\SupplierPerformanceReportController;
@@ -117,6 +118,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/stock-opnames/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock-opnames.print');
     Route::get('/stock-opnames/{stockOpname}', [StockOpnameController::class, 'show'])->name('stock-opnames.show');
+    Route::get('/reports', ReportCenterController::class)->name('reports.index');
     Route::get('/reports/inventory/movements', InventoryMovementReportController::class)->name('reports.inventory.movements');
     Route::get('/reports/inventory/movements/export', [InventoryMovementReportController::class, 'export'])->name('reports.inventory.movements.export');
     Route::middleware('role:super_admin,finance,purchasing')->group(function () {
