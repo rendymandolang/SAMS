@@ -42,7 +42,7 @@
                 <p style="margin:8px 0 0;line-height:1.7;">{{ $maintenance->resolution_notes ?: '-' }}</p>
             </section>
 
-            @if ($maintenance->status !== 'completed' && auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+            @if ($maintenance->status !== 'completed' && auth()->user()->hasPermission('assets.maintenance.manage'))
                 <section class="card">
                     <h2>Complete Maintenance</h2>
                     <form method="POST" action="{{ route('asset-maintenances.complete', $maintenance->id) }}">

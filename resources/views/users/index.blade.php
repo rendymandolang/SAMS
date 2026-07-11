@@ -43,7 +43,7 @@
                             <tr>
                                 <td><strong>{{ $user->name }}</strong></td>
                                 <td>{{ $user->email }}</td>
-                                <td><span class="status">{{ $roles[$user->role] ?? $user->role }}</span></td>
+                                <td><span class="status">{{ $roles[$user->company_role_key] ?? $user->company_role_key }}</span></td>
                                 <td>
                                     @if ($user->is_active)
                                         <span class="badge">Aktif</span>

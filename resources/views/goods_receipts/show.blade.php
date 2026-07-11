@@ -14,7 +14,7 @@
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('goods-receipts.index') }}">Kembali</a>
                     <a class="button secondary inline" href="{{ route('goods-receipts.print', $header->id) }}" target="_blank">Print GR</a>
-                    @if ($header->status === 'draft' && auth()->user()->hasAnyRole(['super_admin', 'warehouse']))
+                    @if ($header->status === 'draft' && auth()->user()->hasPermission('inventory.gr.manage'))
                         <form method="POST" action="{{ route('goods-receipts.post', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Post GR</button>
@@ -96,7 +96,7 @@
                                 <td>
                                     @if ($item->registered_asset_id)
                                         <a class="link-action" href="{{ route('assets.show', $item->registered_asset_id) }}">{{ $item->registered_asset_number }}</a>
-                                    @elseif ($header->status === 'posted' && $item->item_type === 'asset' && (float) $item->accepted_quantity > 0 && auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                                    @elseif ($header->status === 'posted' && $item->item_type === 'asset' && (float) $item->accepted_quantity > 0 && auth()->user()->hasPermission('assets.register.manage'))
                                         <a class="link-action" href="{{ route('assets.create-from-gr-item', $item->id) }}">Register Asset</a>
                                     @else
                                         <span class="muted">-</span>

@@ -14,7 +14,7 @@
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('assets.index') }}">Kembali</a>
                     <a class="button secondary inline" href="{{ route('assets.print', $asset->id) }}" target="_blank">Print Asset</a>
-                    @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                    @if (auth()->user()->hasPermission('assets.maintenance.manage'))
                         <a class="button inline" href="{{ route('asset-maintenances.create', $asset->id) }}">Buat Maintenance</a>
                     @endif
                 </div>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\AccessManager;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -19,12 +20,31 @@ class User extends Authenticatable
 
     public function hasRole(string $role): bool
     {
-        return $this->role === 'super_admin' || $this->role === $role;
+        $roles = app(AccessManager::class)->roleKeys($this);
+
+        return in_array('super_admin', $roles, true) || in_array($role, $roles, true);
     }
 
     public function hasAnyRole(array $roles): bool
     {
-        return $this->role === 'super_admin' || in_array($this->role, $roles, true);
+        $assignedRoles = app(AccessManager::class)->roleKeys($this);
+
+        return in_array('super_admin', $assignedRoles, true) || array_intersect($assignedRoles, $roles) !== [];
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return app(AccessManager::class)->allows($permission, $this);
+    }
+
+    public function canAccessModule(string $module): bool
+    {
+        return app(AccessManager::class)->moduleEnabled($module, $this);
+    }
+
+    public function currentRoleKey(): string
+    {
+        return app(AccessManager::class)->primaryRoleKey($this) ?? 'unassigned';
     }
 
     /**

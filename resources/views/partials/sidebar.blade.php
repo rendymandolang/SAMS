@@ -1,14 +1,33 @@
 @php
     $companyContext = app(\App\Support\CompanyContext::class);
+    $user = auth()->user();
     $currentCompany = $companyContext->current();
     $companyMemberships = $companyContext->memberships();
     $companyLogoUrl = filled($currentCompany->logo_path) ? url('storage/'.$currentCompany->logo_path) : null;
-    $procurementOpen = request()->routeIs('purchase-requests.*', 'purchase-orders.*', 'goods-receipts.*');
-    $inventoryOpen = request()->routeIs('inventory.*', 'stock-opnames.*');
+    $procurementOpen = request()->routeIs('purchase-requests.*', 'purchase-orders.*');
+    $inventoryOpen = request()->routeIs('goods-receipts.*', 'inventory.*', 'stock-opnames.*');
     $assetOpen = request()->routeIs('assets.*', 'asset-maintenances.*');
     $reportsOpen = request()->routeIs('reports.*', 'budget-control.*');
     $masterOpen = request()->routeIs('master.*');
-    $adminOpen = request()->routeIs('approvals.*', 'users.*', 'audit-logs.*', 'settings.*');
+    $adminOpen = request()->routeIs('approvals.*', 'users.*', 'audit-logs.*', 'settings.*', 'access-control.*');
+    $canPurchaseRequests = $user->canAccessModule('procurement') && $user->hasPermission('procurement.pr.view');
+    $canPurchaseOrders = $user->canAccessModule('procurement') && $user->hasPermission('procurement.po.view');
+    $canGoodsReceipts = $user->canAccessModule('inventory') && $user->hasPermission('inventory.gr.view');
+    $canStock = $user->canAccessModule('inventory') && $user->hasPermission('inventory.stock.view');
+    $canAssetRegister = $user->canAccessModule('assets') && $user->hasPermission('assets.register.view');
+    $canAssetMaintenance = $user->canAccessModule('assets') && $user->hasPermission('assets.maintenance.view');
+    $canProcurement = $canPurchaseRequests || $canPurchaseOrders;
+    $canInventory = $canGoodsReceipts || $canStock;
+    $canAssets = $canAssetRegister || $canAssetMaintenance;
+    $canReportCenter = $user->canAccessModule('reporting') && $user->hasPermission('reporting.view');
+    $canInventoryReport = $canReportCenter && $user->canAccessModule('inventory');
+    $canAssetReport = $user->canAccessModule('reporting') && $user->canAccessModule('assets') && $user->hasPermission('reporting.assets.view');
+    $canProcurementReport = $user->canAccessModule('reporting') && $user->canAccessModule('procurement') && $user->hasPermission('reporting.procurement.view');
+    $canBudgeting = $user->canAccessModule('budgeting') && $user->hasPermission('budgeting.view');
+    $canReporting = $canReportCenter || $canInventoryReport || $canAssetReport || $canProcurementReport;
+    $canMaster = $user->hasPermission('core.master.view');
+    $canApprovalCenter = $user->canAccessModule('procurement') && $user->hasPermission('core.approvals.view') && ($user->hasPermission('procurement.pr.approve') || $user->hasPermission('procurement.po.approve'));
+    $canAdministration = $canApprovalCenter || $user->hasPermission('core.users.manage') || $user->hasPermission('core.audit.view') || $user->hasPermission('core.settings.manage') || $user->hasPermission('core.access.manage');
 @endphp
 
 <button class="mobile-menu-toggle" type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="{{ app()->getLocale() === 'id' ? 'Buka navigasi' : 'Open navigation' }}">
@@ -38,6 +57,7 @@
             </a>
         </div>
 
+        @if ($canProcurement)
         <details class="nav-section" @if($procurementOpen) open @endif>
             <summary class="nav-section-summary">
                 <x-icon class="nav-icon" name="procurement" />
@@ -45,12 +65,17 @@
                 <x-icon class="chevron" name="chevron" />
             </summary>
             <div class="nav-submenu">
-                <a class="nav-link {{ request()->routeIs('purchase-requests.*') ? 'active' : '' }}" href="{{ route('purchase-requests.index') }}" @if(request()->routeIs('purchase-requests.*')) aria-current="page" @endif><span>{{ __('navigation.items.purchase_requests') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}" @if(request()->routeIs('purchase-orders.*')) aria-current="page" @endif><span>{{ __('navigation.items.purchase_orders') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}" href="{{ route('goods-receipts.index') }}" @if(request()->routeIs('goods-receipts.*')) aria-current="page" @endif><span>{{ __('navigation.items.goods_receipts') }}</span></a>
+                @if ($canPurchaseRequests)
+                    <a class="nav-link {{ request()->routeIs('purchase-requests.*') ? 'active' : '' }}" href="{{ route('purchase-requests.index') }}" @if(request()->routeIs('purchase-requests.*')) aria-current="page" @endif><span>{{ __('navigation.items.purchase_requests') }}</span></a>
+                @endif
+                @if ($canPurchaseOrders)
+                    <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}" @if(request()->routeIs('purchase-orders.*')) aria-current="page" @endif><span>{{ __('navigation.items.purchase_orders') }}</span></a>
+                @endif
             </div>
         </details>
+        @endif
 
+        @if ($canInventory)
         <details class="nav-section" @if($inventoryOpen) open @endif>
             <summary class="nav-section-summary">
                 <x-icon class="nav-icon" name="inventory" />
@@ -58,11 +83,18 @@
                 <x-icon class="chevron" name="chevron" />
             </summary>
             <div class="nav-submenu">
-                <a class="nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.stock-on-hand') }}" @if(request()->routeIs('inventory.*')) aria-current="page" @endif><span>{{ __('navigation.items.stock_on_hand') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('stock-opnames.*') ? 'active' : '' }}" href="{{ route('stock-opnames.index') }}" @if(request()->routeIs('stock-opnames.*')) aria-current="page" @endif><span>{{ __('navigation.items.stock_opname') }}</span></a>
+                @if ($canGoodsReceipts)
+                    <a class="nav-link {{ request()->routeIs('goods-receipts.*') ? 'active' : '' }}" href="{{ route('goods-receipts.index') }}" @if(request()->routeIs('goods-receipts.*')) aria-current="page" @endif><span>{{ __('navigation.items.goods_receipts') }}</span></a>
+                @endif
+                @if ($canStock)
+                    <a class="nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.stock-on-hand') }}" @if(request()->routeIs('inventory.*')) aria-current="page" @endif><span>{{ __('navigation.items.stock_on_hand') }}</span></a>
+                    <a class="nav-link {{ request()->routeIs('stock-opnames.*') ? 'active' : '' }}" href="{{ route('stock-opnames.index') }}" @if(request()->routeIs('stock-opnames.*')) aria-current="page" @endif><span>{{ __('navigation.items.stock_opname') }}</span></a>
+                @endif
             </div>
         </details>
+        @endif
 
+        @if ($canAssets)
         <details class="nav-section" @if($assetOpen) open @endif>
             <summary class="nav-section-summary">
                 <x-icon class="nav-icon" name="asset" />
@@ -70,11 +102,17 @@
                 <x-icon class="chevron" name="chevron" />
             </summary>
             <div class="nav-submenu">
-                <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}" @if(request()->routeIs('assets.*')) aria-current="page" @endif><span>{{ __('navigation.items.asset_register') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('asset-maintenances.*') ? 'active' : '' }}" href="{{ route('asset-maintenances.index') }}" @if(request()->routeIs('asset-maintenances.*')) aria-current="page" @endif><span>{{ __('navigation.items.asset_maintenance') }}</span></a>
+                @if ($canAssetRegister)
+                    <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}" @if(request()->routeIs('assets.*')) aria-current="page" @endif><span>{{ __('navigation.items.asset_register') }}</span></a>
+                @endif
+                @if ($canAssetMaintenance)
+                    <a class="nav-link {{ request()->routeIs('asset-maintenances.*') ? 'active' : '' }}" href="{{ route('asset-maintenances.index') }}" @if(request()->routeIs('asset-maintenances.*')) aria-current="page" @endif><span>{{ __('navigation.items.asset_maintenance') }}</span></a>
+                @endif
             </div>
         </details>
+        @endif
 
+        @if ($canReporting || $canBudgeting)
         <details class="nav-section" @if($reportsOpen) open @endif>
             <summary class="nav-section-summary">
                 <x-icon class="nav-icon" name="reports" />
@@ -82,17 +120,27 @@
                 <x-icon class="chevron" name="chevron" />
             </summary>
             <div class="nav-submenu">
-                <a class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}" href="{{ route('reports.index') }}" @if(request()->routeIs('reports.index')) aria-current="page" @endif><span>{{ __('navigation.items.report_center') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('reports.inventory.*') ? 'active' : '' }}" href="{{ route('reports.inventory.movements') }}" @if(request()->routeIs('reports.inventory.*')) aria-current="page" @endif><span>{{ __('navigation.items.inventory_movements') }}</span></a>
-                <a class="nav-link {{ request()->routeIs('reports.assets.*') ? 'active' : '' }}" href="{{ route('reports.assets.maintenance-history') }}" @if(request()->routeIs('reports.assets.*')) aria-current="page" @endif><span>{{ __('navigation.items.maintenance_history') }}</span></a>
-                @if (auth()->user()->hasAnyRole(['super_admin', 'finance', 'purchasing']))
+                @if ($canReportCenter)
+                    <a class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}" href="{{ route('reports.index') }}" @if(request()->routeIs('reports.index')) aria-current="page" @endif><span>{{ __('navigation.items.report_center') }}</span></a>
+                @endif
+                @if ($canInventoryReport)
+                    <a class="nav-link {{ request()->routeIs('reports.inventory.*') ? 'active' : '' }}" href="{{ route('reports.inventory.movements') }}" @if(request()->routeIs('reports.inventory.*')) aria-current="page" @endif><span>{{ __('navigation.items.inventory_movements') }}</span></a>
+                @endif
+                @if ($canAssetReport)
+                    <a class="nav-link {{ request()->routeIs('reports.assets.*') ? 'active' : '' }}" href="{{ route('reports.assets.maintenance-history') }}" @if(request()->routeIs('reports.assets.*')) aria-current="page" @endif><span>{{ __('navigation.items.maintenance_history') }}</span></a>
+                @endif
+                @if ($canProcurementReport)
                     <a class="nav-link {{ request()->routeIs('reports.purchasing.cycle*') ? 'active' : '' }}" href="{{ route('reports.purchasing.cycle') }}" @if(request()->routeIs('reports.purchasing.cycle*')) aria-current="page" @endif><span>{{ __('navigation.items.purchasing_cycle') }}</span></a>
                     <a class="nav-link {{ request()->routeIs('reports.purchasing.suppliers*') ? 'active' : '' }}" href="{{ route('reports.purchasing.suppliers') }}" @if(request()->routeIs('reports.purchasing.suppliers*')) aria-current="page" @endif><span>{{ __('navigation.items.supplier_performance') }}</span></a>
+                @endif
+                @if ($canBudgeting)
                     <a class="nav-link {{ request()->routeIs('budget-control.*') ? 'active' : '' }}" href="{{ route('budget-control.index') }}" @if(request()->routeIs('budget-control.*')) aria-current="page" @endif><span>{{ __('navigation.items.budget_control') }}</span></a>
                 @endif
             </div>
         </details>
+        @endif
 
+        @if ($canMaster)
         <details class="nav-section" @if($masterOpen) open @endif>
             <summary class="nav-section-summary">
                 <x-icon class="nav-icon" name="master" />
@@ -108,8 +156,9 @@
                 <a class="nav-link {{ request()->is('master/storage-locations*') ? 'active' : '' }}" href="{{ route('master.index', 'storage-locations') }}"><span>{{ __('navigation.items.storage_locations') }}</span></a>
             </div>
         </details>
+        @endif
 
-        @if (auth()->user()->hasAnyRole(['super_admin', 'finance']))
+        @if ($canAdministration)
             <details class="nav-section" @if($adminOpen) open @endif>
                 <summary class="nav-section-summary">
                     <x-icon class="nav-icon" name="settings" />
@@ -117,11 +166,20 @@
                     <x-icon class="chevron" name="chevron" />
                 </summary>
                 <div class="nav-submenu">
-                    <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}"><span>{{ __('navigation.items.approval_center') }}</span></a>
-                    @if (auth()->user()->hasRole('super_admin'))
+                    @if ($canApprovalCenter)
+                        <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}"><span>{{ __('navigation.items.approval_center') }}</span></a>
+                    @endif
+                    @if ($user->hasPermission('core.users.manage'))
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><span>{{ __('navigation.items.user_management') }}</span></a>
+                    @endif
+                    @if ($user->hasPermission('core.audit.view'))
                         <a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}"><span>{{ __('navigation.items.audit_logs') }}</span></a>
+                    @endif
+                    @if ($user->hasPermission('core.settings.manage'))
                         <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.company.edit') }}"><span>{{ __('navigation.items.company_settings') }}</span></a>
+                    @endif
+                    @if ($user->hasPermission('core.access.manage'))
+                        <a class="nav-link {{ request()->routeIs('access-control.*') ? 'active' : '' }}" href="{{ route('access-control.index') }}"><span>{{ __('navigation.items.access_control') }}</span></a>
                     @endif
                 </div>
             </details>
@@ -135,7 +193,8 @@
             <span class="company-chip__mark"><x-icon name="building" style="width:17px;height:17px;" /></span>
             <span class="company-chip__copy">
                 <strong>{{ auth()->user()->name }}</strong>
-                <span>{{ str_replace('_', ' ', auth()->user()->role) }}</span>
+                @php $currentRoleKey = $user->currentRoleKey(); @endphp
+                <span>{{ \Illuminate\Support\Facades\Lang::has('access.roles.'.$currentRoleKey) ? __('access.roles.'.$currentRoleKey) : str($currentRoleKey)->replace('_', ' ')->title() }}</span>
             </span>
         </div>
 

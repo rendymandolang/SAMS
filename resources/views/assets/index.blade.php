@@ -11,7 +11,7 @@
                     <h1>Asset Register</h1>
                 </div>
 
-                @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                @if (auth()->user()->hasPermission('assets.register.manage'))
                     <a class="button inline" href="{{ route('assets.create') }}">Tambah Asset</a>
                 @endif
             </header>

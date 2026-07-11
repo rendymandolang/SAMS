@@ -14,7 +14,7 @@
                 <div class="user-pill">
                     <div>
                         <strong>{{ auth()->user()->name }}</strong>
-                        <div class="muted" style="font-size:12px;">{{ str_replace('_', ' ', auth()->user()->role) }}</div>
+                        <div class="muted" style="font-size:12px;">{{ str(auth()->user()->currentRoleKey())->replace('_', ' ')->title() }}</div>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -24,58 +24,79 @@
             </header>
 
             <section class="grid stats">
+                @isset ($stats['purchase_requests'])
                 <div class="card">
                     <div class="muted">Purchase Request</div>
                     <div class="stat-value">{{ number_format($stats['purchase_requests']) }}</div>
                     <div class="muted">Dokumen permintaan</div>
                 </div>
+                @endisset
+                @isset ($stats['purchase_orders'])
                 <div class="card">
                     <div class="muted">Purchase Order</div>
                     <div class="stat-value">{{ number_format($stats['purchase_orders']) }}</div>
                     <div class="muted">Pesanan supplier</div>
                 </div>
+                @endisset
+                @isset ($stats['items'])
                 <div class="card">
                     <div class="muted">Master Item</div>
                     <div class="stat-value">{{ number_format($stats['items']) }}</div>
                     <div class="muted">Barang/jasa aktif</div>
                 </div>
+                @endisset
+                @isset ($stats['suppliers'])
                 <div class="card">
                     <div class="muted">Supplier</div>
                     <div class="stat-value">{{ number_format($stats['suppliers']) }}</div>
                     <div class="muted">Vendor terdaftar</div>
                 </div>
+                @endisset
+                @isset ($stats['goods_receipts'])
                 <div class="card">
                     <div class="muted">Goods Receipt</div>
                     <div class="stat-value">{{ number_format($stats['goods_receipts']) }}</div>
                     <div class="muted">Penerimaan barang</div>
                 </div>
+                @endisset
+                @isset ($stats['stock_opnames'])
                 <div class="card">
                     <div class="muted">Stock Opname</div>
                     <div class="stat-value">{{ number_format($stats['stock_opnames']) }}</div>
                     <div class="muted">Hasil hitung fisik</div>
                 </div>
+                @endisset
+                @isset ($stats['stock_on_hand_value'])
                 <div class="card">
                     <div class="muted">Nilai Stok</div>
                     <div class="stat-value">Rp {{ number_format((float) $stats['stock_on_hand_value'], 0, ',', '.') }}</div>
                     <div class="muted">Stock movement posted</div>
                 </div>
+                @endisset
+                @isset ($stats['assets'])
                 <div class="card">
                     <div class="muted">Asset</div>
                     <div class="stat-value">{{ number_format($stats['assets']) }}</div>
                     <div class="muted">Asset register</div>
                 </div>
+                @endisset
+                @isset ($stats['open_maintenance'])
                 <div class="card">
                     <div class="muted">Maintenance</div>
                     <div class="stat-value">{{ number_format($stats['open_maintenance']) }}</div>
                     <div class="muted">Open / in progress</div>
                 </div>
+                @endisset
+                @isset ($stats['pending_approvals'])
                 <div class="card">
                     <div class="muted">Pending Approval</div>
                     <div class="stat-value">{{ number_format($stats['pending_approvals']) }}</div>
                     <div class="muted">PR + PO submitted</div>
                 </div>
+                @endisset
             </section>
 
+            @if (count($executive) > 0)
             <section class="card" style="margin-top:18px;">
                 <div class="toolbar">
                     <div>
@@ -86,7 +107,7 @@
                     <span class="badge">Retina dashboard</span>
                 </div>
 
-                <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+                <div class="grid executive-grid">
                     @foreach ($executive as $metric)
                         @php
                             $percent = $metric['total'] > 0 ? min(100, ((float) $metric['value'] / (float) $metric['total']) * 100) : 0;
@@ -105,15 +126,16 @@
                     @endforeach
                 </div>
             </section>
+            @endif
 
             <section class="grid content-grid">
                 <div class="card">
                     <p class="eyebrow">Roadmap modul</p>
-                    <h2>Fondasi sistem sudah mulai berbentuk</h2>
-                    <p class="muted" style="line-height:1.7;">Tahap ini fokus membuat alur masuk sistem, konteks perusahaan/cabang, dan menu utama. Setelah ini kita bisa mulai CRUD master data dan transaksi pertama.</p>
+                    <h2>Workspace mengikuti akses perusahaan</h2>
+                    <p class="muted" style="line-height:1.7;">Modul, metrik, dan aksi di halaman ini otomatis mengikuti entitlement perusahaan serta permission role Anda.</p>
 
                     <div class="module-list">
-                        @foreach ($modules as $module)
+                        @forelse ($modules as $module)
                             <div class="module-row">
                                 <div>
                                     <strong>{{ $module['name'] }}</strong>
@@ -121,15 +143,18 @@
                                 </div>
                                 <span class="badge {{ $module['status'] === 'Berikutnya' ? 'next' : '' }}">{{ $module['status'] }}</span>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="empty-state">Belum ada modul operasional yang diberikan untuk role ini.</div>
+                        @endforelse
                     </div>
                 </div>
 
                 <aside class="card">
                     <p class="eyebrow">Aksi cepat</p>
-                    <h2>Yang kita bangun berikutnya</h2>
+                    <h2>Akses cepat Anda</h2>
 
                     <div class="quick-actions">
+                        @if ($access['master'])
                         <div class="quick-action">
                             <strong>Master Item</strong>
                             <p class="muted" style="margin:6px 0 0;">Form barang, kategori, satuan, dan harga standar.</p>
@@ -140,47 +165,64 @@
                             <p class="muted" style="margin:6px 0 0;">Data vendor, termin pembayaran, kontak, dan NPWP.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('master.index', 'suppliers') }}">Buka Supplier</a>
                         </div>
+                        @endif
+                        @if ($access['pr_manage'])
                         <div class="quick-action">
                             <strong>Purchase Request</strong>
                             <p class="muted" style="margin:6px 0 0;">Draft PR dari departemen dan validasi budget awal.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-requests.create') }}">Buat PR</a>
                         </div>
+                        @endif
+                        @if ($access['po_view'])
                         <div class="quick-action">
                             <strong>Purchase Order</strong>
                             <p class="muted" style="margin:6px 0 0;">PO dari Purchase Request yang sudah approved.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('purchase-orders.index') }}">Buka PO</a>
                         </div>
+                        @endif
+                        @if ($access['asset_view'])
                         <div class="quick-action">
                             <strong>Asset Register</strong>
                             <p class="muted" style="margin:6px 0 0;">Daftar aset, lokasi, kondisi, nilai perolehan, dan kartu print.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('assets.index') }}">Buka Asset</a>
                         </div>
+                        @endif
+                        @if ($access['maintenance_view'])
                         <div class="quick-action">
                             <strong>Asset Maintenance</strong>
                             <p class="muted" style="margin:6px 0 0;">Work order perawatan aset, biaya, status, dan histori penyelesaian.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('asset-maintenances.index') }}">Buka Maintenance</a>
                         </div>
+                        @endif
+                        @if ($access['asset_report'])
                         <div class="quick-action">
                             <strong>Maintenance History</strong>
                             <p class="muted" style="margin:6px 0 0;">Report biaya, overdue, ranking asset, dan histori maintenance.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.assets.maintenance-history') }}">Buka History</a>
                         </div>
+                        @endif
+                        @if ($access['stock_view'])
                         <div class="quick-action">
                             <strong>Stock On Hand</strong>
                             <p class="muted" style="margin:6px 0 0;">Saldo stok per gudang dari stock movement.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('inventory.stock-on-hand') }}">Lihat Stok</a>
                         </div>
+                        @endif
+                        @if ($access['stock_manage'])
                         <div class="quick-action">
                             <strong>Stock Opname</strong>
                             <p class="muted" style="margin:6px 0 0;">Hitung fisik stok dan posting adjustment selisih.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
                         </div>
+                        @endif
+                        @if ($access['inventory_report'])
                         <div class="quick-action">
                             <strong>Mutasi Stok</strong>
                             <p class="muted" style="margin:6px 0 0;">Laporan masuk/keluar stok lengkap dengan saldo berjalan.</p>
                             <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.inventory.movements') }}">Buka Laporan</a>
                         </div>
-                        @if (auth()->user()->hasAnyRole(['super_admin', 'finance', 'purchasing']))
+                        @endif
+                        @if ($access['procurement_report'])
                             <div class="quick-action">
                                 <strong>Purchasing Cycle</strong>
                                 <p class="muted" style="margin:6px 0 0;">Report PR ke PO sampai GR dengan progress penerimaan dan status kontrol.</p>
@@ -191,13 +233,15 @@
                                 <p class="muted" style="margin:6px 0 0;">Scorecard supplier dari PO, penerimaan, reject rate, dan watch list.</p>
                                 <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('reports.purchasing.suppliers') }}">Buka Scorecard</a>
                             </div>
+                        @endif
+                        @if ($access['budget'])
                             <div class="quick-action">
                                 <strong>Budget Control</strong>
                                 <p class="muted" style="margin:6px 0 0;">Pantau allocated, committed, actual, remaining, dan status risiko budget.</p>
                                 <a class="link-action" style="display:inline-block;margin-top:10px;" href="{{ route('budget-control.index') }}">Buka Control</a>
                             </div>
                         @endif
-                        @if (auth()->user()->hasAnyRole(['super_admin', 'finance']))
+                        @if ($access['approval_center'])
                             <div class="quick-action">
                                 <strong>Approval Center</strong>
                                 <p class="muted" style="margin:6px 0 0;">Satu meja kontrol untuk PR dan PO yang menunggu approval.</p>
@@ -207,11 +251,15 @@
                     </div>
 
                     <div style="margin-top:22px;padding:18px;border-radius:18px;background:linear-gradient(145deg,#6259ca,#20c997);color:#fff;">
-                        <strong>Status lokal</strong>
-                        <p style="margin:8px 0 0;line-height:1.6;opacity:.86;">Auth, dashboard, dan data demo siap dipakai untuk iterasi modul berikutnya.</p>
+                        <strong>Enterprise control aktif</strong>
+                        <p style="margin:8px 0 0;line-height:1.6;opacity:.86;">Menu dan data otomatis mengikuti perusahaan aktif, entitlement modul, serta permission role.</p>
                     </div>
                 </aside>
             </section>
         </main>
     </div>
+
+    <style>
+        .executive-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); }
+    </style>
 @endsection

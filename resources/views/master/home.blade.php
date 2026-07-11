@@ -14,7 +14,7 @@
                 <div class="user-pill">
                     <div>
                         <strong>{{ auth()->user()->name }}</strong>
-                        <div class="muted" style="font-size:12px;">{{ str_replace('_', ' ', auth()->user()->role) }}</div>
+                        <div class="muted" style="font-size:12px;">{{ str(auth()->user()->currentRoleKey())->replace('_', ' ')->title() }}</div>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

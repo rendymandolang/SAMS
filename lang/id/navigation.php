@@ -13,6 +13,7 @@ return [
     ],
     'items' => [
         'approval_center' => 'Pusat Persetujuan',
+        'access_control' => 'Kontrol Akses & Modul',
         'asset_maintenance' => 'Pemeliharaan Aset',
         'asset_register' => 'Daftar Aset',
         'audit_logs' => 'Log Audit',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
+use App\Support\AccessManager;
 use App\Support\CompanyContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,32 +18,48 @@ class AttachmentController extends Controller
             'table' => 'purchase_requests',
             'route' => 'purchase-requests.show',
             'label' => 'Purchase Request',
+            'module' => 'procurement',
+            'view_permission' => 'procurement.pr.view',
+            'manage_permission' => 'procurement.pr.manage',
         ],
         'purchase_order' => [
             'table' => 'purchase_orders',
             'route' => 'purchase-orders.show',
             'label' => 'Purchase Order',
+            'module' => 'procurement',
+            'view_permission' => 'procurement.po.view',
+            'manage_permission' => 'procurement.po.manage',
         ],
         'goods_receipt' => [
             'table' => 'goods_receipts',
             'route' => 'goods-receipts.show',
             'label' => 'Goods Receipt',
+            'module' => 'inventory',
+            'view_permission' => 'inventory.gr.view',
+            'manage_permission' => 'inventory.gr.manage',
         ],
         'asset_register' => [
             'table' => 'asset_registers',
             'route' => 'assets.show',
             'label' => 'Asset',
+            'module' => 'assets',
+            'view_permission' => 'assets.register.view',
+            'manage_permission' => 'assets.register.manage',
         ],
         'asset_maintenance' => [
             'table' => 'asset_maintenances',
             'route' => 'asset-maintenances.show',
             'label' => 'Asset Maintenance',
+            'module' => 'assets',
+            'view_permission' => 'assets.maintenance.view',
+            'manage_permission' => 'assets.maintenance.manage',
         ],
     ];
 
     public function store(Request $request, string $type, int $id): RedirectResponse
     {
         $meta = $this->meta($type);
+        $this->authorizeType($meta, true);
         $entity = $this->entity($type, $id);
 
         $validated = $request->validate([
@@ -79,6 +96,7 @@ class AttachmentController extends Controller
     public function download(int $attachment): StreamedResponse
     {
         $row = $this->findAttachment($attachment);
+        $this->authorizeType($this->meta($row->attachable_type), false);
 
         abort_unless(Storage::disk($row->disk)->exists($row->path), 404);
 
@@ -89,6 +107,7 @@ class AttachmentController extends Controller
     {
         $row = $this->findAttachment($attachment);
         $meta = $this->meta($row->attachable_type);
+        $this->authorizeType($meta, true);
 
         Storage::disk($row->disk)->delete($row->path);
 
@@ -150,5 +169,13 @@ class AttachmentController extends Controller
         abort_unless($row, 404);
 
         return $row;
+    }
+
+    private function authorizeType(array $meta, bool $manage): void
+    {
+        $access = app(AccessManager::class);
+        $permission = $manage ? $meta['manage_permission'] : $meta['view_permission'];
+
+        abort_unless($access->moduleEnabled($meta['module']) && $access->allows($permission), 403);
     }
 }

@@ -14,14 +14,14 @@
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <a class="button secondary inline" href="{{ route('purchase-requests.index') }}">Kembali</a>
                     <a class="button secondary inline" href="{{ route('purchase-requests.print', $header->id) }}" target="_blank">Print PR</a>
-                    @if ($header->status === 'draft' && auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse', 'staff']))
+                    @if ($header->status === 'draft' && auth()->user()->hasPermission('procurement.pr.manage'))
                         <a class="button secondary inline" href="{{ route('purchase-requests.edit', $header->id) }}">Edit Draft</a>
                         <form method="POST" action="{{ route('purchase-requests.submit', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Submit</button>
                         </form>
                     @endif
-                    @if ($header->status === 'submitted' && auth()->user()->hasAnyRole(['super_admin', 'finance']))
+                    @if ($header->status === 'submitted' && auth()->user()->hasPermission('procurement.pr.approve'))
                         <form method="POST" action="{{ route('purchase-requests.approve', $header->id) }}">
                             @csrf
                             <button class="button inline" type="submit">Approve</button>
@@ -31,7 +31,7 @@
                             <button class="button danger inline" type="submit">Reject</button>
                         </form>
                     @endif
-                    @if ($header->status === 'approved' && auth()->user()->hasAnyRole(['super_admin', 'purchasing']))
+                    @if ($header->status === 'approved' && auth()->user()->hasPermission('procurement.po.manage'))
                         <a class="button inline" href="{{ route('purchase-orders.create-from-pr', $header->id) }}">Buat PO</a>
                     @endif
                 </div>
@@ -116,7 +116,7 @@
                     </table>
                 </div>
 
-                @if ($header->status === 'draft' && auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse', 'staff']))
+                @if ($header->status === 'draft' && auth()->user()->hasPermission('procurement.pr.manage'))
                     <form method="POST" action="{{ route('purchase-requests.destroy', $header->id) }}" onsubmit="return confirm('Hapus draft Purchase Request ini?')" style="display:flex;justify-content:flex-end;margin-top:22px;">
                         @csrf
                         @method('DELETE')

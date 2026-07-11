@@ -14,7 +14,7 @@
                 <div class="user-pill">
                     <div>
                         <strong>{{ auth()->user()->name }}</strong>
-                        <div class="muted" style="font-size:12px;">{{ str_replace('_', ' ', auth()->user()->role) }}</div>
+                        <div class="muted" style="font-size:12px;">{{ str(auth()->user()->currentRoleKey())->replace('_', ' ')->title() }}</div>
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -33,7 +33,7 @@
                         <h2 style="margin-bottom:6px;">Daftar {{ $config['title'] }}</h2>
                         <p class="muted" style="margin:0;">{{ $config['description'] }}</p>
                     </div>
-                    @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                    @if (auth()->user()->hasPermission('core.master.manage'))
                         <a class="button inline" href="{{ route('master.create', $master) }}">+ Tambah</a>
                     @endif
                 </div>
@@ -63,7 +63,7 @@
                                     </td>
                                 @endforeach
                                 <td>
-                                    @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse']))
+                                    @if (auth()->user()->hasPermission('core.master.manage'))
                                         <div class="actions">
                                             <a class="link-action" href="{{ route('master.edit', [$master, $row->id]) }}">Edit</a>
                                             <form method="POST" action="{{ route('master.destroy', [$master, $row->id]) }}" onsubmit="return confirm('Hapus data ini?')">

@@ -11,7 +11,7 @@
                     <h1>Stock Opname</h1>
                 </div>
 
-                @if (auth()->user()->hasAnyRole(['super_admin', 'warehouse']))
+                @if (auth()->user()->hasPermission('inventory.stock.manage'))
                     <a class="button inline" href="{{ route('stock-opnames.create') }}">Buat Opname</a>
                 @endif
             </header>

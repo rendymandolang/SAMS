@@ -40,7 +40,7 @@
                             <span class="label">Role *</span>
                             <select class="input" name="role" required>
                                 @foreach ($roles as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('role', $user?->role ?? 'staff') === $value)>{{ $label }}</option>
+                                    <option value="{{ $value }}" @selected(old('role', $currentRole ?? 'staff') === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </label>

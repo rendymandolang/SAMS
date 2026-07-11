@@ -11,7 +11,7 @@
                     <h1>Purchase Request</h1>
                 </div>
 
-                @if (auth()->user()->hasAnyRole(['super_admin', 'purchasing', 'warehouse', 'staff']))
+                @if (auth()->user()->hasPermission('procurement.pr.manage'))
                     <a class="button inline" href="{{ route('purchase-requests.create') }}">+ Buat PR</a>
                 @endif
             </header>

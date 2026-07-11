@@ -39,6 +39,7 @@
                 </div>
             </section>
 
+            @if ($canApprovePurchaseRequests)
             <section class="card" style="margin-bottom:18px;">
                 <div class="toolbar">
                     <div>
@@ -96,7 +97,9 @@
                     </table>
                 </div>
             </section>
+            @endif
 
+            @if ($canApprovePurchaseOrders)
             <section class="card">
                 <div class="toolbar">
                     <div>
@@ -147,6 +150,7 @@
                     </table>
                 </div>
             </section>
+            @endif
         </main>
     </div>
 @endsection

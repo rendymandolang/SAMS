@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\AccessControlProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -515,5 +516,7 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        app(AccessControlProvisioner::class)->syncAllCompanies();
     }
 }

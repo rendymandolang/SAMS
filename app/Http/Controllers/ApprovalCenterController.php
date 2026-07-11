@@ -11,8 +11,13 @@ class ApprovalCenterController extends Controller
     public function __invoke(): View
     {
         $company = app(CompanyContext::class)->current();
+        $user = auth()->user();
+        $canApprovePurchaseRequests = $user->hasPermission('procurement.pr.approve');
+        $canApprovePurchaseOrders = $user->hasPermission('procurement.po.approve');
 
-        $purchaseRequests = DB::table('purchase_requests')
+        abort_unless($canApprovePurchaseRequests || $canApprovePurchaseOrders, 403);
+
+        $purchaseRequests = $canApprovePurchaseRequests ? DB::table('purchase_requests')
             ->join('departments', 'departments.id', '=', 'purchase_requests.department_id')
             ->join('users', 'users.id', '=', 'purchase_requests.requested_by')
             ->where('purchase_requests.company_id', $company->id)
@@ -25,9 +30,9 @@ class ApprovalCenterController extends Controller
             )
             ->orderByRaw("CASE purchase_requests.priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 ELSE 4 END")
             ->orderBy('purchase_requests.request_date')
-            ->get();
+            ->get() : collect();
 
-        $purchaseOrders = DB::table('purchase_orders')
+        $purchaseOrders = $canApprovePurchaseOrders ? DB::table('purchase_orders')
             ->join('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
             ->join('users', 'users.id', '=', 'purchase_orders.created_by')
             ->leftJoin('purchase_requests', 'purchase_requests.id', '=', 'purchase_orders.purchase_request_id')
@@ -41,7 +46,7 @@ class ApprovalCenterController extends Controller
                 'purchase_requests.document_number as purchase_request_number',
             )
             ->orderBy('purchase_orders.order_date')
-            ->get();
+            ->get() : collect();
 
         $summary = [
             'pending_count' => $purchaseRequests->count() + $purchaseOrders->count(),
@@ -52,6 +57,13 @@ class ApprovalCenterController extends Controller
             'urgent_count' => $purchaseRequests->whereIn('priority', ['urgent', 'high'])->count(),
         ];
 
-        return view('approvals.index', compact('company', 'purchaseRequests', 'purchaseOrders', 'summary'));
+        return view('approvals.index', compact(
+            'company',
+            'purchaseRequests',
+            'purchaseOrders',
+            'summary',
+            'canApprovePurchaseRequests',
+            'canApprovePurchaseOrders',
+        ));
     }
 }
