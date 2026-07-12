@@ -19,6 +19,31 @@
     @if (session('status')) <div class="notice">{{ session('status') }}</div> @endif
     @if ($errors->has('ai')) <div class="notice">{{ $errors->first('ai') }}</div> @endif
 
+    <section class="card" style="margin-bottom:18px;background:linear-gradient(135deg,var(--primary-soft),#fff 58%,var(--accent-soft));">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+            <div>
+                <p class="eyebrow">Live Market Data · API.co.id</p>
+                <h2 style="margin-bottom:5px;">Kurs {{ $bankRates['bank_code'] }}</h2>
+                <p class="muted" style="margin:0;">Referensi read-only untuk estimasi pembelian valuta asing. Bukan kurs transaksi final.</p>
+            </div>
+            <span class="status">{{ $bankRates['available'] ? 'Live · '.$bankRates['rate_type'] : 'Offline lembut' }}</span>
+        </div>
+        @if ($bankRates['available'])
+            <div class="detail-grid" style="margin-top:16px;">
+                @foreach ($bankRates['rates'] as $rate)
+                    <div class="detail-box" style="background:rgba(255,255,255,.78);">
+                        <strong>{{ $rate['currency'] }}</strong>
+                        <div class="muted" style="margin-top:8px;">Beli <span style="float:right;color:var(--text);">Rp {{ number_format($rate['buy'], 2, ',', '.') }}</span></div>
+                        <div class="muted">Jual <span style="float:right;color:var(--text);">Rp {{ number_format($rate['sell'], 2, ',', '.') }}</span></div>
+                    </div>
+                @endforeach
+            </div>
+            <p class="muted" style="margin:12px 0 0;font-size:12px;">Diperbarui penyedia: {{ $bankRates['updated_at'] ?: 'baru saja' }} · Cache SAMS 30 menit</p>
+        @else
+            <div class="detail-box" style="margin-top:16px;background:rgba(255,255,255,.78);">{{ $bankRates['message'] }}. Modul SAMS lainnya tetap berjalan normal.</div>
+        @endif
+    </section>
+
     <div class="grid two-columns" style="margin-bottom:18px;">
         <section class="card">
             <h2>Tanya Data Operasional</h2>

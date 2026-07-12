@@ -7,6 +7,7 @@ use App\Support\AiNarrativeService;
 use App\Support\AiQueryService;
 use App\Support\AiUsageManager;
 use App\Support\CompanyContext;
+use App\Support\LiveBankRateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -14,14 +15,14 @@ use Throwable;
 
 class AiInsightController extends Controller
 {
-    public function index(CompanyContext $context, AiInsightService $service, AiUsageManager $usageManager): View
+    public function index(CompanyContext $context, AiInsightService $service, AiUsageManager $usageManager, LiveBankRateService $bankRateService): View
     {
         $company = $context->current();
         $runs = DB::table('ai_insight_runs')->where('company_id', $company->id)->orderByDesc('id')->limit(10)->get()
             ->map(function (object $run): object { $run->output = json_decode($run->output, true) ?: []; return $run; });
         $interactions = DB::table('ai_interactions')->where('company_id', $company->id)->orderByDesc('id')->limit(10)->get();
 
-        return view('ai-insights.index', ['company' => $company, 'snapshot' => $service->snapshot((int) $company->id), 'runs' => $runs, 'interactions' => $interactions, 'aiSettings' => $usageManager->settings((int) $company->id), 'aiUsage' => $usageManager->usage((int) $company->id)]);
+        return view('ai-insights.index', ['company' => $company, 'snapshot' => $service->snapshot((int) $company->id), 'runs' => $runs, 'interactions' => $interactions, 'aiSettings' => $usageManager->settings((int) $company->id), 'aiUsage' => $usageManager->usage((int) $company->id), 'bankRates' => $bankRateService->current()]);
     }
 
     public function generate(CompanyContext $context, AiInsightService $service): RedirectResponse

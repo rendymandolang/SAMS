@@ -6,11 +6,38 @@ use App\Models\User;
 use App\Support\AiInsightService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AiInsightTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_ai_insights_show_soft_live_bri_rates_without_exposing_api_key(): void
+    {
+        $this->seed();
+        Cache::flush();
+        config(['services.api_co_id.key' => 'private-test-key', 'services.api_co_id.base_url' => 'https://use.api.co.id', 'services.api_co_id.bank_code' => 'bri']);
+        Http::fake(['https://use.api.co.id/api/bank-rates*' => Http::response([
+            'is_success' => true,
+            'data' => [
+                'bank_code' => 'bri',
+                'last_fetched_at' => '2026-07-13T10:00:00+07:00',
+                'rate' => ['e-rate' => ['usd' => ['buy' => 18176, 'sell' => 17923]]],
+            ],
+        ])]);
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $this->actingAs($user)->get('/ai-insights')
+            ->assertOk()
+            ->assertSee('Live Market Data')
+            ->assertSee('Kurs BRI')
+            ->assertSee('18.176,00')
+            ->assertDontSee('private-test-key');
+
+        Http::assertSent(fn ($request) => $request->hasHeader('x-api-co-id', 'private-test-key') && $request['bank_code'] === 'bri');
+    }
 
     public function test_authorized_user_can_generate_company_scoped_local_insights(): void
     {

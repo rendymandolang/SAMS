@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'api_co_id' => [
+        'key' => env('API_CO_ID_KEY'),
+        'base_url' => env('API_CO_ID_BASE_URL', 'https://use.api.co.id'),
+        'bank_code' => env('API_CO_ID_BANK_CODE', 'bri'),
+        'cache_minutes' => (int) env('API_CO_ID_CACHE_MINUTES', 30),
+    ],
+
 ];
