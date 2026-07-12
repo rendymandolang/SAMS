@@ -90,6 +90,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - AI Insight Center read-only dengan local analytics bawaan, provider OpenAI opsional, company scope, permission, usage metadata, dan audit trail
 - AI forecasting lokal untuk reorder stok, anomali harga PO, supplier risk, serta prediksi maintenance dengan risk score dan confidence
 - Natural-language operational query tanpa SQL bebas, narrative report, serta request/token/provider guardrail per perusahaan
+- Supplier Catalog Upload & Scanner untuk CSV/XLSX/XLS/PDF, staging review, normalisasi unit lintas kategori, publish, dan AI price comparison terhadap budget
 
 Blueprint database tersedia di
 [`docs/SAMS_DATABASE_ERD_V1.md`](docs/SAMS_DATABASE_ERD_V1.md).

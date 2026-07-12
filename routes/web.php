@@ -24,6 +24,7 @@ use App\Http\Controllers\ReportCenterController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\SupplierPerformanceReportController;
+use App\Http\Controllers\SupplierCatalogController;
 use App\Http\Controllers\TransactionPeriodLockController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -115,11 +116,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('purchase-orders.print');
         Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+        Route::get('/supplier-catalogs', [SupplierCatalogController::class, 'index'])->name('supplier-catalogs.index');
+        Route::get('/supplier-catalogs/{catalog}', [SupplierCatalogController::class, 'show'])->name('supplier-catalogs.show');
+        Route::post('/supplier-catalogs/compare', [SupplierCatalogController::class, 'compare'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('supplier-catalogs.compare');
     });
     Route::middleware(['module:procurement', 'permission:procurement.po.manage'])->group(function () {
         Route::get('/purchase-orders/create/from-pr/{purchaseRequest}', [PurchaseOrderController::class, 'createFromPurchaseRequest'])->name('purchase-orders.create-from-pr');
         Route::post('/purchase-orders/from-pr/{purchaseRequest}', [PurchaseOrderController::class, 'storeFromPurchaseRequest'])->name('purchase-orders.store-from-pr');
         Route::post('/purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit'])->name('purchase-orders.submit');
+        Route::post('/supplier-catalogs', [SupplierCatalogController::class, 'store'])->name('supplier-catalogs.store');
+        Route::put('/supplier-catalogs/{catalog}/items/{catalogItem}', [SupplierCatalogController::class, 'updateItem'])->name('supplier-catalogs.items.update');
+        Route::post('/supplier-catalogs/{catalog}/publish', [SupplierCatalogController::class, 'publish'])->name('supplier-catalogs.publish');
     });
     Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])->middleware(['module:procurement', 'permission:procurement.po.approve'])->name('purchase-orders.approve');
 

@@ -275,6 +275,7 @@
             font-weight: 700;
         }
         .grid { display: grid; gap: 18px; }
+        .two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         .content-grid { grid-template-columns: 1.5fr .9fr; margin-top: 18px; }
         .card {
@@ -498,6 +499,7 @@
             .main { padding-top: 76px; }
             .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .line-card, .line-card.budgeted { grid-template-columns: 1fr; }
+            .two-columns { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 620px) {

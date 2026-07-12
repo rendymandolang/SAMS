@@ -4,7 +4,7 @@
     $currentCompany = $companyContext->current();
     $companyMemberships = $companyContext->memberships();
     $companyLogoUrl = filled($currentCompany->logo_path) ? url('storage/'.$currentCompany->logo_path) : null;
-    $procurementOpen = request()->routeIs('purchase-requests.*', 'purchase-orders.*');
+    $procurementOpen = request()->routeIs('purchase-requests.*', 'purchase-orders.*', 'supplier-catalogs.*');
     $inventoryOpen = request()->routeIs('goods-receipts.*', 'inventory.*', 'stock-opnames.*');
     $assetOpen = request()->routeIs('assets.*', 'asset-maintenances.*');
     $reportsOpen = request()->routeIs('reports.*', 'budget-control.*');
@@ -12,11 +12,12 @@
     $adminOpen = request()->routeIs('approvals.*', 'users.*', 'audit-logs.*', 'settings.*', 'access-control.*');
     $canPurchaseRequests = $user->canAccessModule('procurement') && $user->hasPermission('procurement.pr.view');
     $canPurchaseOrders = $user->canAccessModule('procurement') && $user->hasPermission('procurement.po.view');
+    $canSupplierCatalogs = $canPurchaseOrders;
     $canGoodsReceipts = $user->canAccessModule('inventory') && $user->hasPermission('inventory.gr.view');
     $canStock = $user->canAccessModule('inventory') && $user->hasPermission('inventory.stock.view');
     $canAssetRegister = $user->canAccessModule('assets') && $user->hasPermission('assets.register.view');
     $canAssetMaintenance = $user->canAccessModule('assets') && $user->hasPermission('assets.maintenance.view');
-    $canProcurement = $canPurchaseRequests || $canPurchaseOrders;
+    $canProcurement = $canPurchaseRequests || $canPurchaseOrders || $canSupplierCatalogs;
     $canInventory = $canGoodsReceipts || $canStock;
     $canAssets = $canAssetRegister || $canAssetMaintenance;
     $canReportCenter = $user->canAccessModule('reporting') && $user->hasPermission('reporting.view');
@@ -77,6 +78,9 @@
                 @endif
                 @if ($canPurchaseOrders)
                     <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}" @if(request()->routeIs('purchase-orders.*')) aria-current="page" @endif><span>{{ __('navigation.items.purchase_orders') }}</span></a>
+                @endif
+                @if ($canSupplierCatalogs)
+                    <a class="nav-link {{ request()->routeIs('supplier-catalogs.*') ? 'active' : '' }}" href="{{ route('supplier-catalogs.index') }}"><span>{{ __('navigation.items.supplier_catalogs') }}</span></a>
                 @endif
             </div>
         </details>

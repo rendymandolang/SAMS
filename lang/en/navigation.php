@@ -36,6 +36,7 @@ return [
         'stock_opname' => 'Stock Opname',
         'storage_locations' => 'Storage Locations',
         'supplier_performance' => 'Supplier Performance',
+        'supplier_catalogs' => 'Supplier Catalogs & Comparison',
         'suppliers' => 'Suppliers',
         'units' => 'Units',
         'user_management' => 'User Management',

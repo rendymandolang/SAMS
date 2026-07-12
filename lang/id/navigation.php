@@ -36,6 +36,7 @@ return [
         'stock_opname' => 'Stok Opname',
         'storage_locations' => 'Lokasi Penyimpanan',
         'supplier_performance' => 'Kinerja Pemasok',
+        'supplier_catalogs' => 'Katalog & Komparasi Supplier',
         'suppliers' => 'Pemasok',
         'units' => 'Satuan',
         'user_management' => 'Manajemen Pengguna',
