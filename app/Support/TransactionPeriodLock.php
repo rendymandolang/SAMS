@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 class TransactionPeriodLock
 {
-    public const MODULES = ['procurement', 'inventory'];
+    public const MODULES = ['procurement', 'inventory', 'accounting'];
 
     public static function ensureOpen(int $companyId, string $module, CarbonInterface|string $date): void
     {

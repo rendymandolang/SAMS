@@ -14,7 +14,7 @@ final class ModuleCatalog
             'assets' => ['name' => 'Asset Management', 'description' => 'Asset register, maintenance, lifecycle, and history.', 'status' => 'active', 'sort_order' => 40],
             'budgeting' => ['name' => 'Budgeting', 'description' => 'Department budget allocation, commitment, actual, and controls.', 'status' => 'active', 'sort_order' => 50],
             'reporting' => ['name' => 'Reporting & Intelligence', 'description' => 'Operational reports, exports, print, and management insights.', 'status' => 'active', 'sort_order' => 60],
-            'accounting' => ['name' => 'Accounting', 'description' => 'General ledger, AP, AR, cash, bank, tax, and closing.', 'status' => 'planned', 'sort_order' => 70],
+            'accounting' => ['name' => 'Accounting', 'description' => 'General ledger, journals, AP, cash, bank, tax, and closing.', 'status' => 'active', 'sort_order' => 70],
             'pos' => ['name' => 'Point of Sale', 'description' => 'Outlet, cashier, order, payment, shift, and sales control.', 'status' => 'planned', 'sort_order' => 80],
             'mobile' => ['name' => 'Mobile Operations', 'description' => 'Approval, QR asset, stock count, and maintenance mobile tools.', 'status' => 'planned', 'sort_order' => 90],
             'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'active', 'sort_order' => 100],
@@ -59,6 +59,10 @@ final class ModuleCatalog
             'reporting.procurement.view' => self::permission('reporting', 'View procurement and supplier reports', 20),
             'reporting.assets.view' => self::permission('reporting', 'View asset maintenance reports', 30),
 
+            'accounting.view' => self::permission('accounting', 'View accounting and reports', 10),
+            'accounting.manage' => self::permission('accounting', 'Create accounts and journal vouchers', 20),
+            'accounting.post' => self::permission('accounting', 'Post journal vouchers', 30),
+
             'intelligence.view' => self::permission('intelligence', 'View AI operational insights', 10),
             'intelligence.generate' => self::permission('intelligence', 'Generate AI operational insights', 20),
         ];
@@ -89,6 +93,7 @@ final class ModuleCatalog
                 'inventory.gr.view', 'inventory.stock.view',
                 'assets.register.view', 'assets.register.manage', 'assets.maintenance.view', 'assets.maintenance.manage',
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
+                'accounting.view', 'accounting.manage',
                 'intelligence.view', 'intelligence.generate',
             ],
             'warehouse' => [
@@ -106,6 +111,7 @@ final class ModuleCatalog
                 'intelligence.view', 'intelligence.generate',
                 'assets.register.view', 'assets.maintenance.view',
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
+                'accounting.view', 'accounting.manage', 'accounting.post',
             ],
             'staff' => [
                 'core.dashboard.view', 'core.master.view', 'core.attachments.manage',

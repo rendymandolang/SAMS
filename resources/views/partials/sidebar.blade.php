@@ -27,6 +27,7 @@
     $canBudgeting = $user->canAccessModule('budgeting') && $user->hasPermission('budgeting.view');
     $canReporting = $canReportCenter || $canInventoryReport || $canAssetReport || $canProcurementReport;
     $canIntelligence = $user->canAccessModule('intelligence') && $user->hasPermission('intelligence.view');
+    $canAccounting = $user->canAccessModule('accounting') && $user->hasPermission('accounting.view');
     $canMaster = $user->hasPermission('core.master.view');
     $canApprovalCenter = $user->canAccessModule('procurement') && $user->hasPermission('core.approvals.view') && ($user->hasPermission('procurement.pr.approve') || $user->hasPermission('procurement.po.approve'));
     $canAdministration = $canApprovalCenter || $user->hasPermission('core.users.manage') || $user->hasPermission('core.audit.view') || $user->hasPermission('core.settings.manage') || $user->hasPermission('core.access.manage');
@@ -63,6 +64,7 @@
                     <span>{{ __('navigation.items.ai_insights') }}</span>
                 </a>
             @endif
+            @if ($canAccounting)<a class="nav-link {{ request()->routeIs('accounting.*') ? 'active' : '' }}" href="{{ route('accounting.index') }}"><x-icon class="nav-icon" name="reports" /><span>Accounting</span></a>@endif
         </div>
 
         @if ($canProcurement)

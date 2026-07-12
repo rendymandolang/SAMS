@@ -105,15 +105,15 @@ class AccessControlTest extends TestCase
         $this->seed();
         $admin = User::query()->where('email', 'admin@sams.local')->firstOrFail();
         $company = DB::table('companies')->where('code', 'SAMS')->firstOrFail();
-        $accountingModuleId = DB::table('modules')->where('key', 'accounting')->value('id');
+        $plannedModuleId = DB::table('modules')->where('key', 'pos')->value('id');
 
         $this->actingAs($admin)
             ->from('/settings/access-control')
-            ->put('/settings/access-control/modules', ['modules' => [$accountingModuleId]])
+            ->put('/settings/access-control/modules', ['modules' => [$plannedModuleId]])
             ->assertRedirect('/settings/access-control')
             ->assertSessionHasErrors('modules');
 
-        $this->assertFalse($this->companyModuleEnabled((int) $company->id, 'accounting'));
+        $this->assertFalse($this->companyModuleEnabled((int) $company->id, 'pos'));
     }
 
     public function test_custom_role_matrix_is_enforced_and_survives_reprovisioning(): void

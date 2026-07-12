@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AccessControlController;
+use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AiInsightController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetMaintenanceReportController;
@@ -31,7 +32,7 @@ use App\Http\Controllers\TransactionPeriodLockController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
-foreach (['role', 'user', 'attachment', 'id', 'purchaseRequest', 'purchaseOrder', 'goodsReceipt', 'goodsReceiptItem', 'asset', 'maintenance', 'stockOpname'] as $numericParameter) {
+foreach (['role', 'user', 'attachment', 'id', 'purchaseRequest', 'purchaseOrder', 'goodsReceipt', 'goodsReceiptItem', 'asset', 'maintenance', 'stockOpname', 'journal'] as $numericParameter) {
     Route::pattern($numericParameter, '[0-9]+');
 }
 
@@ -83,6 +84,9 @@ Route::middleware('auth')->group(function () {
         ->middleware(['module:core', 'module:procurement', 'permission:core.approvals.view'])
         ->name('approvals.index');
     Route::get('/ai-insights', [AiInsightController::class, 'index'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('ai-insights.index');
+    Route::middleware(['module:accounting','permission:accounting.view'])->group(function(){Route::get('/accounting',[AccountingController::class,'index'])->name('accounting.index');Route::get('/accounting/journals/{journal}',[AccountingController::class,'show'])->name('accounting.show');Route::get('/accounting/journals/{journal}/print',[AccountingController::class,'print'])->name('accounting.print');});
+    Route::middleware(['module:accounting','permission:accounting.manage'])->group(function(){Route::get('/accounting/journals/create',[AccountingController::class,'create'])->name('accounting.create');Route::post('/accounting/journals',[AccountingController::class,'store'])->middleware(\App\Http\Middleware\FilterBlankJournalLines::class)->name('accounting.store');});
+    Route::post('/accounting/journals/{journal}/post',[AccountingController::class,'post'])->middleware(['module:accounting','permission:accounting.post'])->name('accounting.post');
     Route::post('/ai-insights/generate', [AiInsightController::class, 'generate'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.generate');
     Route::post('/ai-insights/query', [AiInsightController::class, 'query'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.query');
     Route::post('/ai-insights/narrative', [AiInsightController::class, 'narrative'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.narrative');
