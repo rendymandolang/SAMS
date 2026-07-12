@@ -19,6 +19,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
+use App\Http\Controllers\PublicInfoController;
 use App\Http\Controllers\PurchasingCycleReportController;
 use App\Http\Controllers\ReportCenterController;
 use App\Http\Controllers\StockOnHandController;
@@ -36,6 +37,10 @@ foreach (['role', 'user', 'attachment', 'id', 'purchaseRequest', 'purchaseOrder'
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+Route::get('/info/{page}', PublicInfoController::class)
+    ->whereIn('page', ['status', 'security', 'terms', 'privacy', 'help', 'access'])
+    ->name('public.info');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
