@@ -13,6 +13,7 @@ use App\Http\Controllers\BudgetControlController;
 use App\Http\Controllers\CompanyContextController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataConnectionController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\LocaleController;
@@ -59,6 +60,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/period-locks', [TransactionPeriodLockController::class, 'index'])->name('settings.period-locks.index');
         Route::post('/settings/period-locks', [TransactionPeriodLockController::class, 'store'])->name('settings.period-locks.store');
         Route::delete('/settings/period-locks/{periodLock}', [TransactionPeriodLockController::class, 'destroy'])->name('settings.period-locks.destroy');
+        Route::get('/settings/data-connections', [DataConnectionController::class, 'index'])->name('data-connections.index');
+        Route::post('/settings/data-connections/{connection}/test', [DataConnectionController::class, 'test'])->name('data-connections.test');
+        Route::put('/settings/data-connections/{connection}/toggle', [DataConnectionController::class, 'toggle'])->name('data-connections.toggle');
     });
     Route::middleware(['module:core', 'permission:core.access.manage'])->group(function () {
         Route::get('/settings/access-control', [AccessControlController::class, 'index'])->name('access-control.index');

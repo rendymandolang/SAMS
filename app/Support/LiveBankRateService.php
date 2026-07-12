@@ -33,6 +33,14 @@ class LiveBankRateService
         }
     }
 
+    public function probe(): array
+    {
+        $bankCode = strtolower((string) config('services.api_co_id.bank_code', 'bri'));
+        Cache::forget("live-bank-rate:{$bankCode}");
+
+        return $this->current();
+    }
+
     private function fetch(string $key, string $bankCode): array
     {
         $response = Http::baseUrl(rtrim((string) config('services.api_co_id.base_url'), '/'))

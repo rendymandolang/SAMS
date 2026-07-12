@@ -9,7 +9,7 @@
     $assetOpen = request()->routeIs('assets.*', 'asset-maintenances.*');
     $reportsOpen = request()->routeIs('reports.*', 'budget-control.*');
     $masterOpen = request()->routeIs('master.*');
-    $adminOpen = request()->routeIs('approvals.*', 'users.*', 'audit-logs.*', 'settings.*', 'access-control.*');
+    $adminOpen = request()->routeIs('approvals.*', 'users.*', 'audit-logs.*', 'settings.*', 'access-control.*', 'data-connections.*');
     $canPurchaseRequests = $user->canAccessModule('procurement') && $user->hasPermission('procurement.pr.view');
     $canPurchaseOrders = $user->canAccessModule('procurement') && $user->hasPermission('procurement.po.view');
     $canSupplierCatalogs = $canPurchaseOrders;
@@ -189,6 +189,7 @@
                     @if ($user->hasPermission('core.settings.manage'))
                         <a class="nav-link {{ request()->routeIs('settings.company.*') ? 'active' : '' }}" href="{{ route('settings.company.edit') }}"><span>{{ __('navigation.items.company_settings') }}</span></a>
                         <a class="nav-link {{ request()->routeIs('settings.period-locks.*') ? 'active' : '' }}" href="{{ route('settings.period-locks.index') }}"><span>{{ __('navigation.items.period_locks') }}</span></a>
+                        <a class="nav-link {{ request()->routeIs('data-connections.*') ? 'active' : '' }}" href="{{ route('data-connections.index') }}"><span>Data Connections</span></a>
                     @endif
                     @if ($user->hasPermission('core.access.manage'))
                         <a class="nav-link {{ request()->routeIs('access-control.*') ? 'active' : '' }}" href="{{ route('access-control.index') }}"><span>{{ __('navigation.items.access_control') }}</span></a>
