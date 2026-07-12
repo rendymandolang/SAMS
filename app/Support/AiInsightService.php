@@ -61,7 +61,14 @@ class AiInsightService
             'active_assets' => DB::table('asset_registers')->where('company_id', $companyId)->where('status', 'active')->whereNull('deleted_at')->count(),
             'open_maintenances' => DB::table('asset_maintenances')->where('company_id', $companyId)->whereIn('status', ['open', 'in_progress'])->whereNull('deleted_at')->count(),
             'overdue_maintenances' => DB::table('asset_maintenances')->where('company_id', $companyId)->whereIn('status', ['open', 'in_progress'])->whereDate('scheduled_date', '<', today())->whereNull('deleted_at')->count(),
-            'negative_stock_items' => DB::table('stock_movements')->where('company_id', $companyId)->groupBy('storage_location_id', 'item_id')->havingRaw('SUM(quantity) < 0')->get()->count(),
+            'negative_stock_items' => DB::table('stock_movements')
+                ->where('company_id', $companyId)
+                ->select('storage_location_id', 'item_id')
+                ->selectRaw('SUM(quantity) as stock_balance')
+                ->groupBy('storage_location_id', 'item_id')
+                ->havingRaw('SUM(quantity) < 0')
+                ->get()
+                ->count(),
             'stock_forecasts' => $predictive->stockForecasts($companyId),
             'price_anomalies' => $predictive->priceAnomalies($companyId),
             'supplier_risks' => $predictive->supplierRisks($companyId),
