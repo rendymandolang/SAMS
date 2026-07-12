@@ -128,6 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/supplier-catalogs', [SupplierCatalogController::class, 'index'])->name('supplier-catalogs.index');
         Route::get('/supplier-catalogs/{catalog}', [SupplierCatalogController::class, 'show'])->name('supplier-catalogs.show');
         Route::post('/supplier-catalogs/compare', [SupplierCatalogController::class, 'compare'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('supplier-catalogs.compare');
+        Route::post('/supplier-catalogs/comparisons/{comparison}/decide', [SupplierCatalogController::class, 'decide'])->middleware(['module:intelligence', 'permission:intelligence.view', 'permission:procurement.po.manage'])->name('supplier-catalogs.comparisons.decide');
     });
     Route::middleware(['module:procurement', 'permission:procurement.po.manage'])->group(function () {
         Route::get('/purchase-orders/create/from-pr/{purchaseRequest}', [PurchaseOrderController::class, 'createFromPurchaseRequest'])->name('purchase-orders.create-from-pr');

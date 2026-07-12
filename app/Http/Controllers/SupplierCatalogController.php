@@ -19,8 +19,9 @@ class SupplierCatalogController extends Controller
     {
         $company=$context->current();$catalogs=DB::table('supplier_catalogs')->join('suppliers','suppliers.id','=','supplier_catalogs.supplier_id')->where('supplier_catalogs.company_id',$company->id)->select('supplier_catalogs.*','suppliers.name as supplier_name')->orderByDesc('supplier_catalogs.id')->get();
         $suppliers=DB::table('suppliers')->where('company_id',$company->id)->where('is_active',true)->whereNull('deleted_at')->orderBy('name')->get();$comparison=null;
-        if($request->integer('comparison')){$comparison=DB::table('supplier_comparison_runs')->where('company_id',$company->id)->where('id',$request->integer('comparison'))->first();if($comparison)$comparison->results=json_decode($comparison->results,true)?:[];}
-        return view('supplier-catalogs.index',compact('company','catalogs','suppliers','comparison'));
+        if($request->integer('comparison')){$comparison=DB::table('supplier_comparison_runs')->where('company_id',$company->id)->where('id',$request->integer('comparison'))->first();if($comparison){$comparison->results=json_decode($comparison->results,true)?:[];$comparison->summary=json_decode($comparison->summary??'{}',true)?:[];}}
+        $comparisonHistory=DB::table('supplier_comparison_runs')->where('company_id',$company->id)->orderByDesc('id')->limit(10)->get();
+        return view('supplier-catalogs.index',compact('company','catalogs','suppliers','comparison','comparisonHistory'));
     }
     public function store(Request $request,CompanyContext $context,SupplierCatalogScanner $scanner):RedirectResponse
     {
@@ -34,4 +35,27 @@ class SupplierCatalogController extends Controller
     public function updateItem(Request $request,int $catalog,int $catalogItem,CompanyContext $context):RedirectResponse{$company=$context->current();$row=DB::table('supplier_catalog_items')->join('supplier_catalogs','supplier_catalogs.id','=','supplier_catalog_items.supplier_catalog_id')->where('supplier_catalogs.company_id',$company->id)->where('supplier_catalogs.id',$catalog)->where('supplier_catalog_items.id',$catalogItem)->select('supplier_catalog_items.*')->first();abort_unless($row,404);$v=$request->validate(['source_name'=>['required','string','max:255'],'source_sku'=>['nullable','string','max:100'],'price'=>['required','numeric','min:0.0001'],'normalized_quantity'=>['required','numeric','min:0.000001'],'normalized_unit'=>['required','string','max:20'],'minimum_order_quantity'=>['required','numeric','min:0']]);$v['normalized_unit']=strtoupper($v['normalized_unit']);$v['normalized_unit_price']=$v['price']/$v['normalized_quantity'];DB::table('supplier_catalog_items')->where('id',$row->id)->update([...$v,'confidence'=>1,'updated_at'=>now()]);return back()->with('status','Baris katalog diperbarui.');}
     public function publish(Request $request,int $catalog,CompanyContext $context):RedirectResponse{$company=$context->current();$catalogRow=DB::table('supplier_catalogs')->where('company_id',$company->id)->where('id',$catalog)->first();abort_unless($catalogRow,404);$ids=collect($request->input('item_ids',[]))->map(fn($id)=>(int)$id)->filter();$query=DB::table('supplier_catalog_items')->where('supplier_catalog_id',$catalog)->where('status','staged');if($ids->isNotEmpty())$query->whereIn('id',$ids);$count=$query->update(['status'=>'published','updated_at'=>now()]);DB::table('supplier_catalogs')->where('id',$catalog)->update(['status'=>'published','updated_at'=>now()]);AuditLogger::log('supplier_catalog_published','supplier_catalog',$catalog,null,['rows'=>$count],(int)$company->id);return back()->with('status',$count.' baris katalog dipublikasikan.');}
     public function compare(Request $request,CompanyContext $context,SupplierComparisonService $service):RedirectResponse{$v=$request->validate(['query'=>['required','string','max:255'],'quantity'=>['required','numeric','min:0.0001'],'unit'=>['required','in:KG,L,PCS,SET,PACK,BOX,ROLL'],'budget'=>['nullable','numeric','min:0']]);$result=$service->compare((int)$context->id(),$v['query'],(float)$v['quantity'],$v['unit'],isset($v['budget'])?(float)$v['budget']:null);return redirect()->route('supplier-catalogs.index',['comparison'=>$result['id']]);}
+
+    public function decide(Request $request, int $comparison, CompanyContext $context): RedirectResponse
+    {
+        $company = $context->current();
+        $run = DB::table('supplier_comparison_runs')->where('company_id', $company->id)->where('id', $comparison)->first();
+        abort_unless($run, 404);
+        $validated = $request->validate(['catalog_item_id' => ['required', 'integer'], 'decision_reason' => ['nullable', 'string', 'max:1000']]);
+        $selected = collect(json_decode($run->results, true) ?: [])->firstWhere('catalog_item_id', (int) $validated['catalog_item_id']);
+        abort_unless($selected, 422, 'Rekomendasi tidak ditemukan pada analisis ini.');
+
+        DB::table('supplier_comparison_runs')->where('id', $run->id)->update([
+            'status' => 'selected',
+            'selected_supplier_id' => $selected['supplier_id'],
+            'selected_catalog_item_id' => $selected['catalog_item_id'],
+            'decision_reason' => $validated['decision_reason'] ?? null,
+            'decided_by' => auth()->id(),
+            'decided_at' => now(),
+            'updated_at' => now(),
+        ]);
+        AuditLogger::log('supplier_recommendation_selected', 'supplier_comparison_run', (int) $run->id, ['status' => $run->status], ['status' => 'selected', 'supplier_id' => $selected['supplier_id'], 'catalog_item_id' => $selected['catalog_item_id']], (int) $company->id);
+
+        return redirect()->route('supplier-catalogs.index', ['comparison' => $run->id])->with('status', 'Rekomendasi supplier dipilih dan tercatat untuk review procurement.');
+    }
 }

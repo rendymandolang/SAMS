@@ -16,6 +16,8 @@ Status: MVP release gate completed locally on 11 July 2026.
 3. Configure production mail, Redis cache/session/queue, timezone, log rotation, and object storage or persistent attachment storage.
 4. Run `composer audit --locked` and `npm audit`.
 5. Run the complete test suite and production asset build.
+6. Rotate every development API key before go-live and confirm no credential exists in Git history, database fields, screenshots, or logs.
+7. Test every active provider from Data Connections and record the owner, quota, expiry, and fallback procedure.
 
 ## Deployment
 
@@ -49,6 +51,8 @@ Run the queue worker under Supervisor or systemd with automatic restart.
 - Attachments upload, download, and delete on persistent storage.
 - Print views and CSV exports open correctly.
 - Mobile sidebar works at 390 px and tablet layout at 768 px.
+- Supplier Budget AI records its recommendation, budget summary, selected supplier decision, and audit event without creating a PO automatically.
+- Data Connections shows only connection metadata; API keys remain in server environment configuration.
 
 ## Backup and Monitoring
 

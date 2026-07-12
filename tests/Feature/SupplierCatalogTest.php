@@ -28,8 +28,12 @@ class SupplierCatalogTest extends TestCase
         $this->assertSame('KG',$salmon->normalized_unit);$this->assertEquals(.5,(float)$salmon->normalized_quantity);$this->assertEquals(400000,(float)$salmon->normalized_unit_price);
         $this->actingAs($user)->post('/supplier-catalogs/'.$catalog->id.'/publish')->assertRedirect();
         $this->actingAs($user)->post('/supplier-catalogs/compare',['query'=>'salmon fillet','quantity'=>10,'unit'=>'KG','budget'=>4500000])->assertRedirect();
-        $run=DB::table('supplier_comparison_runs')->firstOrFail();$result=json_decode($run->results,true)[0];
-        $this->assertEquals(4000000,$result['total_cost']);$this->assertTrue($result['within_budget']);$this->assertDatabaseHas('audit_logs',['event'=>'supplier_catalog_compared','auditable_id'=>$run->id]);
+        $run=DB::table('supplier_comparison_runs')->firstOrFail();$result=json_decode($run->results,true)[0];$summary=json_decode($run->summary,true);
+        $this->assertEquals(4000000,$result['total_cost']);$this->assertTrue($result['within_budget']);$this->assertSame($supplier->name,$summary['recommended_supplier']);$this->assertEquals(500000,$summary['budget_remaining']);
+        $this->actingAs($user)->get('/supplier-catalogs?comparison='.$run->id)->assertOk()->assertSee('Supplier Budget AI')->assertSee('Riwayat Analisis Budget');
+        $this->actingAs($user)->post('/supplier-catalogs/comparisons/'.$run->id.'/decide',['catalog_item_id'=>$result['catalog_item_id'],'decision_reason'=>'Harga terbaik dan sesuai budget'])->assertRedirect();
+        $this->assertDatabaseHas('supplier_comparison_runs',['id'=>$run->id,'status'=>'selected','selected_supplier_id'=>$supplier->id,'selected_catalog_item_id'=>$result['catalog_item_id']]);
+        $this->assertDatabaseHas('audit_logs',['event'=>'supplier_catalog_compared','auditable_id'=>$run->id]);$this->assertDatabaseHas('audit_logs',['event'=>'supplier_recommendation_selected','auditable_id'=>$run->id]);
     }
 
     public function test_xlsx_scanner_supports_generic_furniture_and_atk_columns(): void
