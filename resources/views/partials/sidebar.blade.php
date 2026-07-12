@@ -64,7 +64,14 @@
                     <span>{{ __('navigation.items.ai_insights') }}</span>
                 </a>
             @endif
-            @if ($canAccounting)<a class="nav-link {{ request()->routeIs('accounting.*') ? 'active' : '' }}" href="{{ route('accounting.index') }}"><x-icon class="nav-icon" name="reports" /><span>Accounting</span></a>@endif
+            @if ($canAccounting)
+                <a class="nav-link {{ request()->routeIs('accounting.index','accounting.show','accounting.create') ? 'active' : '' }}" href="{{ route('accounting.index') }}"><x-icon class="nav-icon" name="reports" /><span>Accounting</span></a>
+                <a class="nav-link {{ request('report')==='general-ledger' ? 'active' : '' }}" href="{{ route('accounting.reports.show','general-ledger') }}"><span>General Ledger</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','trial-balance') }}"><span>Trial Balance</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','balance-sheet') }}"><span>Balance Sheet</span></a>
+                @if($user->hasPermission('accounting.post'))<a class="nav-link {{ request()->routeIs('accounting.close-month*')?'active':'' }}" href="{{ route('accounting.close-month') }}"><span>Close Month</span></a>@endif
+            @endif
         </div>
 
         @if ($canProcurement)
