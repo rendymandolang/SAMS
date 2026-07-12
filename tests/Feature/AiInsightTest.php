@@ -43,6 +43,8 @@ class AiInsightTest extends TestCase
         $this->seed();
         config(['ai.driver' => 'openai', 'ai.openai.api_key' => null, 'ai.openai.model' => 'configured-model']);
         $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $company = DB::table('companies')->firstOrFail();
+        DB::table('ai_company_settings')->insert(['company_id' => $company->id, 'is_enabled' => true, 'allow_external_provider' => true, 'monthly_request_limit' => 100, 'monthly_token_limit' => 100000, 'created_at' => now(), 'updated_at' => now()]);
 
         $this->actingAs($user)->post('/ai-insights/generate')->assertSessionHasErrors('ai');
 
@@ -112,5 +114,41 @@ class AiInsightTest extends TestCase
         $prediction = collect($snapshot['maintenance_predictions'])->firstWhere('asset_id', $assetId);
         $this->assertSame('high', $prediction['risk_level']);
         $this->assertSame('high', $prediction['confidence']);
+    }
+
+    public function test_safe_natural_language_query_and_narrative_are_stored_and_audited(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+
+        $this->actingAs($user)->post('/ai-insights/query', ['question' => 'Berapa sisa budget saat ini?'])->assertRedirect();
+        $this->actingAs($user)->post('/ai-insights/query', ['question' => 'DROP TABLE users'])->assertRedirect();
+        $this->actingAs($user)->post('/ai-insights/narrative')->assertRedirect();
+
+        $this->assertDatabaseHas('ai_interactions', ['type' => 'query', 'intent' => 'budget']);
+        $this->assertDatabaseHas('ai_interactions', ['type' => 'query', 'intent' => 'help']);
+        $this->assertDatabaseHas('ai_interactions', ['type' => 'narrative', 'intent' => 'executive_summary']);
+        $this->assertDatabaseHas('users', ['email' => 'admin@sams.local']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'ai_query_answered']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'ai_narrative_generated']);
+    }
+
+    public function test_company_quota_and_external_provider_guardrails_are_enforced(): void
+    {
+        $this->seed();
+        $user = User::query()->where('email', 'admin@sams.local')->firstOrFail();
+        $company = DB::table('companies')->firstOrFail();
+
+        $this->actingAs($user)->put('/ai-insights/settings', [
+            'is_enabled' => '1', 'monthly_request_limit' => 1, 'monthly_token_limit' => 1000,
+        ])->assertRedirect();
+        $this->actingAs($user)->post('/ai-insights/query', ['question' => 'status approval'])->assertRedirect();
+        $this->actingAs($user)->post('/ai-insights/narrative')->assertSessionHasErrors('ai');
+
+        config(['ai.driver' => 'openai', 'ai.openai.api_key' => 'not-used']);
+        DB::table('ai_interactions')->delete();
+        $this->actingAs($user)->post('/ai-insights/generate')->assertSessionHasErrors('ai');
+        $this->assertDatabaseHas('ai_company_settings', ['company_id' => $company->id, 'allow_external_provider' => false]);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'ai_settings_updated']);
     }
 }

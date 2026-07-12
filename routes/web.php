@@ -74,6 +74,9 @@ Route::middleware('auth')->group(function () {
         ->name('approvals.index');
     Route::get('/ai-insights', [AiInsightController::class, 'index'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('ai-insights.index');
     Route::post('/ai-insights/generate', [AiInsightController::class, 'generate'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.generate');
+    Route::post('/ai-insights/query', [AiInsightController::class, 'query'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.query');
+    Route::post('/ai-insights/narrative', [AiInsightController::class, 'narrative'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.narrative');
+    Route::put('/ai-insights/settings', [AiInsightController::class, 'updateSettings'])->middleware(['module:intelligence', 'permission:core.settings.manage'])->name('ai-insights.settings');
     Route::middleware(['module:core', 'permission:core.attachments.manage'])->group(function () {
         Route::post('/attachments/{type}/{id}', [AttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');

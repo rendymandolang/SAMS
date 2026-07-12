@@ -9,12 +9,49 @@
     <div class="page-header">
         <div><p class="eyebrow">SuperSoft Intelligence · {{ $company->name }}</p><h1>AI Insight Center</h1><p>Analisis read-only berbasis data perusahaan aktif. Insight tidak dapat mengubah transaksi.</p></div>
         @if (auth()->user()->hasPermission('intelligence.generate'))
-            <form method="POST" action="{{ route('ai-insights.generate') }}">@csrf<button class="button primary" type="submit">Generate Insight</button></form>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <form method="POST" action="{{ route('ai-insights.generate') }}">@csrf<button class="button primary" type="submit">Generate Insight</button></form>
+                <form method="POST" action="{{ route('ai-insights.narrative') }}">@csrf<button class="button secondary" type="submit">Buat Narrative Report</button></form>
+            </div>
         @endif
     </div>
 
     @if (session('status')) <div class="notice">{{ session('status') }}</div> @endif
     @if ($errors->has('ai')) <div class="notice">{{ $errors->first('ai') }}</div> @endif
+
+    <div class="grid two-columns" style="margin-bottom:18px;">
+        <section class="card">
+            <h2>Tanya Data Operasional</h2>
+            <p class="muted">Intent aman: budget, stok/reorder, supplier, maintenance/aset, dan approval. Tidak ada SQL bebas.</p>
+            <form method="POST" action="{{ route('ai-insights.query') }}" class="field">
+                @csrf
+                <input class="input" name="question" maxlength="500" required placeholder="Contoh: supplier mana yang paling berisiko?">
+                <button class="button primary" type="submit">Tanyakan</button>
+            </form>
+        </section>
+        <section class="card">
+            <h2>Usage Bulan Ini</h2>
+            <div class="detail-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+                <div class="detail-box"><div class="muted">Request</div><div class="value">{{ $aiUsage['requests'] }} / {{ $aiSettings->monthly_request_limit }}</div></div>
+                <div class="detail-box"><div class="muted">Token</div><div class="value">{{ number_format($aiUsage['tokens']) }} / {{ number_format($aiSettings->monthly_token_limit) }}</div></div>
+            </div>
+            <p class="muted">Provider eksternal: {{ $aiSettings->allow_external_provider ? 'diizinkan' : 'diblokir' }} · AI: {{ $aiSettings->is_enabled ? 'aktif' : 'nonaktif' }}</p>
+        </section>
+    </div>
+
+    @if (auth()->user()->hasPermission('core.settings.manage'))
+        <section class="card" style="margin-bottom:18px;">
+            <h2>AI Guardrail & Quota</h2>
+            <form method="POST" action="{{ route('ai-insights.settings') }}" class="form-grid">
+                @csrf @method('PUT')
+                <label><input type="checkbox" name="is_enabled" value="1" @checked($aiSettings->is_enabled)> AI aktif untuk perusahaan</label>
+                <label><input type="checkbox" name="allow_external_provider" value="1" @checked($aiSettings->allow_external_provider)> Izinkan provider eksternal</label>
+                <label>Request per bulan <input class="input" type="number" name="monthly_request_limit" value="{{ $aiSettings->monthly_request_limit }}" min="1" required></label>
+                <label>Token per bulan <input class="input" type="number" name="monthly_token_limit" value="{{ $aiSettings->monthly_token_limit }}" min="1000" required></label>
+                <div class="field full"><button class="button primary" type="submit">Simpan Guardrail</button></div>
+            </form>
+        </section>
+    @endif
 
     <section class="card" style="margin-bottom:18px;">
         <h2>Operational Snapshot</h2>
@@ -61,6 +98,19 @@
             </tbody></table></div>
         </section>
     </div>
+
+    <section class="card" style="margin-bottom:18px;">
+        <h2>Query & Narrative Terbaru</h2>
+        @forelse ($interactions as $interaction)
+            <article class="detail-box" style="margin-bottom:10px;">
+                <p class="eyebrow">{{ strtoupper($interaction->type) }} · {{ $interaction->intent }} · {{ $interaction->created_at }}</p>
+                @if ($interaction->question)<strong>{{ $interaction->question }}</strong>@endif
+                <p style="margin:8px 0 0;line-height:1.7;">{{ $interaction->answer }}</p>
+            </article>
+        @empty
+            <p class="muted">Belum ada pertanyaan atau narrative report.</p>
+        @endforelse
+    </section>
 
     @forelse ($runs as $run)
         <section class="card" style="margin-bottom:18px;">

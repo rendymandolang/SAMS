@@ -15,6 +15,13 @@ Predictive analytics included locally:
 
 Predictions expose their confidence and return an explicit insufficient-data state when history is not adequate. They are decision support, not automatic transactions.
 
+Additional completed capabilities:
+
+- safe natural-language queries mapped only to approved intents; no model-generated SQL is executed;
+- deterministic executive narrative reports from the verified company snapshot;
+- per-company enable/disable control, external-provider opt-in, monthly request quota, and monthly token quota;
+- auditable query, narrative, settings, success, and failure events.
+
 ## OpenAI provider
 
 Set these only in the local or server `.env` file:

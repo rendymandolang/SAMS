@@ -89,6 +89,7 @@ Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
 - Reversal Goods Receipt dan Stock Opname berbasis contra movement tanpa menghapus ledger, termasuk pemulihan budget dan received quantity
 - AI Insight Center read-only dengan local analytics bawaan, provider OpenAI opsional, company scope, permission, usage metadata, dan audit trail
 - AI forecasting lokal untuk reorder stok, anomali harga PO, supplier risk, serta prediksi maintenance dengan risk score dan confidence
+- Natural-language operational query tanpa SQL bebas, narrative report, serta request/token/provider guardrail per perusahaan
 
 Blueprint database tersedia di
 [`docs/SAMS_DATABASE_ERD_V1.md`](docs/SAMS_DATABASE_ERD_V1.md).

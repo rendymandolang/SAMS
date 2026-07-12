@@ -11,8 +11,9 @@ class AiInsightService
 {
     public function generate(int $companyId): array
     {
-        $snapshot = $this->snapshot($companyId);
         $driver = config('ai.driver', 'local');
+        app(AiUsageManager::class)->ensureAllowed($companyId, $driver === 'openai');
+        $snapshot = $this->snapshot($companyId);
         try {
             $result = $driver === 'openai' ? $this->openAi($snapshot) : $this->local($snapshot);
         } catch (Throwable $exception) {
