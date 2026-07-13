@@ -28,16 +28,16 @@ class ExampleTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk()
-            ->assertSee('Masuk ke SAMS')
-            ->assertSee('SAMS v1.0.1')
+            ->assertSee('Masuk ke SuperSoft')
+            ->assertSee('SuperSoft Enterprise v1.0.1')
             ->assertSee('Rendy Mandolang')
             ->assertDontSee('admin@sams.local');
     }
 
-    public function test_public_sams_information_pages_can_be_opened_without_login(): void
+    public function test_public_supersoft_information_pages_can_be_opened_without_login(): void
     {
         foreach (['status', 'security', 'terms', 'privacy', 'help', 'access'] as $page) {
-            $this->get('/info/'.$page)->assertOk()->assertSee('SAMS');
+            $this->get('/info/'.$page)->assertOk()->assertSee('SuperSoft');
         }
     }
 

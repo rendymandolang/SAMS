@@ -47,7 +47,7 @@
         @endif
         <span class="brand-copy">
             <span class="brand-name">{{ $currentCompany->name }}</span>
-            <span class="brand-product">SuperSoft · SAMS</span>
+            <span class="brand-product">SuperSoft Enterprise · SaMS</span>
         </span>
     </a>
 

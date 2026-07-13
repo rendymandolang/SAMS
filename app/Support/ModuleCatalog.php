@@ -11,13 +11,15 @@ final class ModuleCatalog
             'core' => ['name' => 'Platform Core', 'description' => 'Identity, tenant context, users, workflow, security, and audit.', 'status' => 'active', 'sort_order' => 10],
             'procurement' => ['name' => 'Procurement', 'description' => 'Purchase requests, purchase orders, and supplier purchasing control.', 'status' => 'active', 'sort_order' => 20],
             'inventory' => ['name' => 'Inventory', 'description' => 'Goods receipt, stock balances, movements, and stock count.', 'status' => 'active', 'sort_order' => 30],
-            'assets' => ['name' => 'Asset Management', 'description' => 'Asset register, maintenance, lifecycle, and history.', 'status' => 'active', 'sort_order' => 40],
+            'assets' => ['name' => 'SaMS — Super Asset Management System', 'description' => 'Asset register, maintenance, lifecycle, and history.', 'status' => 'active', 'sort_order' => 40],
             'budgeting' => ['name' => 'Budgeting', 'description' => 'Department budget allocation, commitment, actual, and controls.', 'status' => 'active', 'sort_order' => 50],
             'reporting' => ['name' => 'Reporting & Intelligence', 'description' => 'Operational reports, exports, print, and management insights.', 'status' => 'active', 'sort_order' => 60],
-            'accounting' => ['name' => 'Accounting', 'description' => 'General ledger, journals, AP, cash, bank, tax, and closing.', 'status' => 'active', 'sort_order' => 70],
-            'pos' => ['name' => 'Point of Sale', 'description' => 'Outlet, cashier, order, payment, shift, and sales control.', 'status' => 'planned', 'sort_order' => 80],
-            'mobile' => ['name' => 'Mobile Operations', 'description' => 'Approval, QR asset, stock count, and maintenance mobile tools.', 'status' => 'planned', 'sort_order' => 90],
-            'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'active', 'sort_order' => 100],
+            'accounting' => ['name' => 'SaS — Super Accounting System', 'description' => 'General ledger, journals, AP, cash, bank, tax, and closing.', 'status' => 'active', 'sort_order' => 70],
+            'pos' => ['name' => 'SPoS — Super Point of Sale', 'description' => 'Outlet, cashier, order, payment, shift, and sales control.', 'status' => 'planned', 'sort_order' => 80],
+            'hotel' => ['name' => 'SHMS — Super Hotel Management System', 'description' => 'Reservation, front office, rooms, folio, housekeeping, and night audit.', 'status' => 'planned', 'sort_order' => 90],
+            'hris' => ['name' => 'SHRiS — Super Human Resource Information System', 'description' => 'Employee records, attendance, leave, payroll, and workforce controls.', 'status' => 'planned', 'sort_order' => 100],
+            'mobile' => ['name' => 'Mobile Operations', 'description' => 'Approval, QR asset, stock count, and maintenance mobile tools.', 'status' => 'planned', 'sort_order' => 110],
+            'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'active', 'sort_order' => 120],
         ];
     }
 

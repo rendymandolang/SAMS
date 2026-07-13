@@ -4,7 +4,7 @@
     $themePrimary = $safeColor($themeCompany?->primary_color ?? null, '#5967D8');
     $themeAccent = $safeColor($themeCompany?->accent_color ?? null, '#2F9D8F');
     $themeSidebar = $safeColor($themeCompany?->sidebar_color ?? null, '#182335');
-    $appName = $themeCompany?->name ?: 'SAMS';
+    $appName = $themeCompany?->name ?: config('supersoft.product_name');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -12,7 +12,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="{{ $themePrimary }}">
-    <title>{{ $title ?? $appName.' · SAMS' }}</title>
+    <title>{{ $title ?? $appName.' · '.config('supersoft.product_name') }}</title>
     <style>
         :root {
             color-scheme: light;
