@@ -27,6 +27,7 @@ class SupplierCatalogTest extends TestCase
         $catalog = DB::table('supplier_catalogs')->firstOrFail();
         $response->assertRedirect('/supplier-catalogs/'.$catalog->id);
         $this->assertDatabaseHas('supplier_catalogs', ['id' => $catalog->id, 'status' => 'scanned', 'row_count' => 2]);
+        $this->assertSame((int) $catalog->file_size, (int) DB::table('company_storage_profiles')->value('used_bytes'));
         $salmon = DB::table('supplier_catalog_items')->where('source_sku', 'SAL-500')->firstOrFail();
         $this->assertSame('KG', $salmon->normalized_unit);
         $this->assertEquals(.5, (float) $salmon->normalized_quantity);
@@ -102,9 +103,9 @@ class SupplierCatalogTest extends TestCase
         }$xref = strlen($pdf);
         $pdf .= "xref\n0 6\n0000000000 65535 f \n";
         for ($i = 1; $i <= 5; $i++) {
-            $pdf .= sprintf("%010d 00000 n \n",$offsets[$i]);
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
         }
 
-return $pdf."trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF";
+        return $pdf."trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF";
     }
 }

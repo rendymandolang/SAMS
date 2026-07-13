@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\CompanyStorageManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class EnterpriseSettingsController extends Controller
 {
@@ -44,6 +45,7 @@ class EnterpriseSettingsController extends Controller
             'bucket' => ['nullable', 'string', 'max:255', 'regex:/\A[a-zA-Z0-9._-]+\z/'],
             'region' => ['nullable', 'string', 'max:100'],
             'endpoint' => ['nullable', 'url:http,https', 'max:500'],
+            'use_path_style_endpoint' => ['nullable', 'boolean'],
             'access_key' => ['nullable', 'string', 'max:255'],
             'secret_key' => ['nullable', 'string', 'max:1000'],
             'storage_quota_gb' => ['nullable', 'integer', 'min:1', 'max:1048576'],
@@ -58,11 +60,17 @@ class EnterpriseSettingsController extends Controller
             throw ValidationException::withMessages(['provider' => 'Provider tidak sesuai dengan mode penyimpanan yang dipilih.']);
         }
 
+        $hasAccessKey = filled($validated['access_key'] ?? null);
+        $hasSecretKey = filled($validated['secret_key'] ?? null);
+        if ($hasAccessKey !== $hasSecretKey) {
+            throw ValidationException::withMessages(['access_key' => 'Access key dan secret key harus diisi bersamaan.']);
+        }
+
         if ($validated['mode'] === 'byoc') {
             if (blank($validated['bucket'] ?? null) || blank($validated['endpoint'] ?? null)) {
                 throw ValidationException::withMessages(['bucket' => 'Bucket dan endpoint wajib diisi untuk BYOC.']);
             }
-            if (app()->isProduction() && ! str_starts_with($validated['endpoint'], 'https://')) {
+            if (app()->isProduction() && ! str_starts_with(strtolower($validated['endpoint']), 'https://')) {
                 throw ValidationException::withMessages(['endpoint' => 'Endpoint BYOC production wajib menggunakan HTTPS.']);
             }
             if (! $profile->credentials_encrypted && (blank($validated['access_key'] ?? null) || blank($validated['secret_key'] ?? null))) {
@@ -86,6 +94,7 @@ class EnterpriseSettingsController extends Controller
             'bucket' => $profile->bucket,
             'region' => $profile->region,
             'endpoint' => $profile->endpoint,
+            'use_path_style_endpoint' => (bool) $profile->use_path_style_endpoint,
             'quota_bytes' => $profile->quota_bytes,
         ];
         $new = [
@@ -95,6 +104,7 @@ class EnterpriseSettingsController extends Controller
             'bucket' => $validated['mode'] === 'byoc' ? ($validated['bucket'] ?? null) : null,
             'region' => $validated['mode'] === 'byoc' ? ($validated['region'] ?? null) : null,
             'endpoint' => $validated['mode'] === 'byoc' ? ($validated['endpoint'] ?? null) : null,
+            'use_path_style_endpoint' => $request->boolean('use_path_style_endpoint'),
             'root_prefix' => 'companies/'.$companyId,
             'credentials_encrypted' => $encryptedCredentials,
             'quota_bytes' => isset($validated['storage_quota_gb']) ? $validated['storage_quota_gb'] * 1024 * 1024 * 1024 : null,
@@ -110,6 +120,7 @@ class EnterpriseSettingsController extends Controller
             'bucket' => $new['bucket'],
             'region' => $new['region'],
             'endpoint' => $new['endpoint'],
+            'use_path_style_endpoint' => $new['use_path_style_endpoint'],
             'quota_bytes' => $new['quota_bytes'],
             'credentials_changed' => $encryptedCredentials !== $profile->credentials_encrypted,
         ], $companyId);
@@ -117,18 +128,22 @@ class EnterpriseSettingsController extends Controller
         return redirect()->route('settings.enterprise')->with('status', 'Konfigurasi penyimpanan berhasil disimpan.');
     }
 
-    public function testStorage(CompanyContext $companyContext): RedirectResponse
+    public function testStorage(CompanyContext $companyContext, CompanyStorageManager $storageManager): RedirectResponse
     {
         $companyId = $companyContext->id();
         $profile = DB::table('company_storage_profiles')->where('company_id', $companyId)->firstOrFail();
 
-        if ($profile->mode === 'local' && $profile->provider === 'local') {
-            $ready = File::isDirectory(storage_path('app/private')) && is_writable(storage_path('app/private'));
-            $status = $ready ? 'active' : 'failed';
-            $message = $ready ? 'Local private storage siap digunakan.' : 'Local private storage tidak dapat ditulis.';
-        } else {
+        if ($profile->mode === 'managed') {
             $status = 'pending_connector';
-            $message = 'Konfigurasi tersimpan aman. Connector cloud akan diaktifkan pada tahap integrasi provider.';
+            $message = 'SuperSoft Managed Cloud akan aktif setelah infrastruktur layanan tersedia.';
+        } else {
+            try {
+                $message = $storageManager->testConnection($companyId);
+                $status = 'active';
+            } catch (Throwable) {
+                $status = 'failed';
+                $message = 'Connection test gagal. Periksa endpoint, bucket, region, credential, dan akses jaringan.';
+            }
         }
 
         DB::table('company_storage_profiles')->where('id', $profile->id)->update([

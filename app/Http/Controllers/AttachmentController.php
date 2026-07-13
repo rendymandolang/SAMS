@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class AttachmentController extends Controller
 {
@@ -71,31 +72,62 @@ class AttachmentController extends Controller
 
         $file = $validated['attachment'];
         $storageManager = app(CompanyStorageManager::class);
+        $disk = null;
+        $path = null;
+        $reserved = false;
+        $size = (int) $file->getSize();
+
         try {
             $disk = $storageManager->writableDisk((int) $entity->company_id);
+            $storageManager->reserveCapacity((int) $entity->company_id, $size);
+            $reserved = true;
+            $directory = $storageManager->path((int) $entity->company_id, "attachments/{$type}/{$id}");
+            $path = $file->store($directory, $disk);
+
+            if (! is_string($path) || $path === '') {
+                throw new RuntimeException('File gagal disimpan.');
+            }
+
+            $attachmentId = DB::table('attachments')->insertGetId([
+                'company_id' => $entity->company_id,
+                'attachable_type' => $type,
+                'attachable_id' => $id,
+                'disk' => $disk,
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $size,
+                'uploaded_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         } catch (RuntimeException $exception) {
+            if ($path && $disk) {
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (Throwable) {
+                    // Quota is still released so the company is not charged for a failed request.
+                }
+            }
+            if ($reserved) {
+                $storageManager->releaseCapacity((int) $entity->company_id, $size);
+            }
+
             throw ValidationException::withMessages(['attachment' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            if ($path && $disk) {
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (Throwable) {
+                    // Preserve the original exception and release the reserved quota below.
+                }
+            }
+            if ($reserved) {
+                $storageManager->releaseCapacity((int) $entity->company_id, $size);
+            }
+
+            throw $exception;
         }
-        $directory = $storageManager->path((int) $entity->company_id, "attachments/{$type}/{$id}");
-        $path = $file->store($directory, $disk);
-
-        $attachmentId = DB::table('attachments')->insertGetId([
-            'company_id' => $entity->company_id,
-            'attachable_type' => $type,
-            'attachable_id' => $id,
-            'disk' => $disk,
-            'path' => $path,
-            'original_name' => $file->getClientOriginalName(),
-            'mime_type' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
-            'uploaded_by' => auth()->id(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('company_storage_profiles')
-            ->where('company_id', $entity->company_id)
-            ->increment('used_bytes', (int) $file->getSize(), ['updated_at' => now()]);
 
         AuditLogger::log('attachment_uploaded', $type, $id, null, [
             'attachment_id' => $attachmentId,
@@ -111,10 +143,11 @@ class AttachmentController extends Controller
     {
         $row = $this->findAttachment($attachment);
         $this->authorizeType($this->meta($row->attachable_type), false);
+        $disk = app(CompanyStorageManager::class)->mountStoredDisk((int) $row->company_id, $row->disk);
 
-        abort_unless(Storage::disk($row->disk)->exists($row->path), 404);
+        abort_unless(Storage::disk($disk)->exists($row->path), 404);
 
-        return Storage::disk($row->disk)->download($row->path, $row->original_name);
+        return Storage::disk($disk)->download($row->path, $row->original_name);
     }
 
     public function destroy(int $attachment): RedirectResponse
@@ -122,17 +155,13 @@ class AttachmentController extends Controller
         $row = $this->findAttachment($attachment);
         $meta = $this->meta($row->attachable_type);
         $this->authorizeType($meta, true);
+        $storageManager = app(CompanyStorageManager::class);
+        $disk = $storageManager->mountStoredDisk((int) $row->company_id, $row->disk);
 
-        Storage::disk($row->disk)->delete($row->path);
+        Storage::disk($disk)->delete($row->path);
 
         DB::table('attachments')->where('id', $row->id)->delete();
-        $profile = DB::table('company_storage_profiles')->where('company_id', $row->company_id)->first();
-        if ($profile) {
-            DB::table('company_storage_profiles')->where('id', $profile->id)->update([
-                'used_bytes' => max(0, (int) $profile->used_bytes - (int) $row->size),
-                'updated_at' => now(),
-            ]);
-        }
+        $storageManager->releaseCapacity((int) $row->company_id, (int) $row->size);
 
         AuditLogger::log('attachment_deleted', $row->attachable_type, (int) $row->attachable_id, [
             'attachment_id' => $row->id,

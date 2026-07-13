@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\CompanyStorageManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\TestCase;
 
 class EnterpriseSettingsTest extends TestCase
@@ -58,11 +60,13 @@ class EnterpriseSettingsTest extends TestCase
             'endpoint' => 'https://storage.example.test',
             'access_key' => 'company-access-key',
             'secret_key' => 'company-secret-key',
+            'use_path_style_endpoint' => '1',
             'storage_quota_gb' => 100,
         ])->assertRedirect('/settings/enterprise');
 
         $profile = DB::table('company_storage_profiles')->firstOrFail();
         $this->assertSame('pending_test', $profile->status);
+        $this->assertTrue((bool) $profile->use_path_style_endpoint);
         $this->assertStringNotContainsString('company-access-key', $profile->credentials_encrypted);
         $this->assertStringNotContainsString('company-secret-key', $profile->credentials_encrypted);
 
@@ -97,6 +101,59 @@ class EnterpriseSettingsTest extends TestCase
             'last_test_message' => 'Local private storage siap digunakan.',
         ]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'company_storage_tested']);
+    }
+
+    public function test_storage_capacity_is_reserved_atomically_and_cannot_exceed_quota(): void
+    {
+        $this->seed();
+        $profile = DB::table('company_storage_profiles')->firstOrFail();
+        DB::table('company_storage_profiles')->where('id', $profile->id)->update([
+            'used_bytes' => 90,
+            'quota_bytes' => 100,
+        ]);
+        $manager = app(CompanyStorageManager::class);
+
+        try {
+            $manager->reserveCapacity((int) $profile->company_id, 11);
+            $this->fail('Quota overflow should have been rejected.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Kapasitas penyimpanan perusahaan tidak mencukupi untuk file ini.', $exception->getMessage());
+        }
+
+        $this->assertSame(90, (int) DB::table('company_storage_profiles')->value('used_bytes'));
+        $manager->reserveCapacity((int) $profile->company_id, 10);
+        $this->assertSame(100, (int) DB::table('company_storage_profiles')->value('used_bytes'));
+        $manager->releaseCapacity((int) $profile->company_id, 10);
+        $this->assertSame(90, (int) DB::table('company_storage_profiles')->value('used_bytes'));
+    }
+
+    public function test_cloud_connection_rejects_private_network_endpoints_without_exposing_details(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@sams.local')->firstOrFail();
+        DB::table('company_storage_profiles')->update([
+            'mode' => 'byoc',
+            'provider' => 's3_compatible',
+            'status' => 'pending_test',
+            'bucket' => 'private-test',
+            'region' => 'us-east-1',
+            'endpoint' => 'http://127.0.0.1:9000',
+            'use_path_style_endpoint' => true,
+            'credentials_encrypted' => Crypt::encryptString(json_encode([
+                'access_key' => 'private-access',
+                'secret_key' => 'private-secret',
+            ], JSON_THROW_ON_ERROR)),
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/settings/enterprise/storage/test')
+            ->assertRedirect()
+            ->assertSessionHas('warning', 'Connection test gagal. Periksa endpoint, bucket, region, credential, dan akses jaringan.');
+
+        $profile = DB::table('company_storage_profiles')->firstOrFail();
+        $this->assertSame('failed', $profile->status);
+        $this->assertStringNotContainsString('127.0.0.1', (string) $profile->last_test_message);
+        $this->assertStringNotContainsString('private-secret', (string) $profile->last_test_message);
     }
 
     public function test_company_cannot_activate_an_unlicensed_module(): void

@@ -125,6 +125,13 @@
                         <span class="label">Storage Quota (GB)</span>
                         <input class="input" type="number" min="1" max="1048576" name="storage_quota_gb" value="{{ old('storage_quota_gb', $storage->quota_bytes ? (int) ($storage->quota_bytes / 1024 / 1024 / 1024) : '') }}">
                     </label>
+                    <label class="field" style="align-content:center">
+                        <span class="label">S3 Addressing</span>
+                        <span style="display:flex;align-items:center;gap:8px">
+                            <input type="checkbox" name="use_path_style_endpoint" value="1" @checked(old('use_path_style_endpoint', $storage->use_path_style_endpoint))>
+                            Gunakan path-style endpoint
+                        </span>
+                    </label>
                 </div>
                 <button class="button inline" type="submit">Save Storage Configuration</button>
             </form>

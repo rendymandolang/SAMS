@@ -1191,6 +1191,7 @@ class ExampleTest extends TestCase
             'id' => $attachment->id,
             'original_name' => 'invoice-asset.pdf',
         ]);
+        $this->assertSame((int) $attachment->size, (int) DB::table('company_storage_profiles')->value('used_bytes'));
 
         $showResponse = $this->actingAs($user)->get('/assets/'.$asset->id);
 
@@ -1208,6 +1209,7 @@ class ExampleTest extends TestCase
         $this->assertDatabaseMissing('attachments', [
             'id' => $attachment->id,
         ]);
+        $this->assertSame(0, (int) DB::table('company_storage_profiles')->value('used_bytes'));
     }
 
     public function test_asset_can_be_registered_from_posted_goods_receipt_item(): void

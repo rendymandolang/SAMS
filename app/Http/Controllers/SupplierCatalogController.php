@@ -43,16 +43,70 @@ class SupplierCatalogController extends Controller
         abort_unless(DB::table('suppliers')->where('company_id', $company->id)->where('id', $v['supplier_id'])->exists(), 404);
         $file = $request->file('catalog_file');
         $storageManager = app(CompanyStorageManager::class);
+        $disk = null;
+        $path = null;
+        $reserved = false;
+        $size = (int) $file->getSize();
+
         try {
             $disk = $storageManager->writableDisk((int) $company->id);
+            $storageManager->reserveCapacity((int) $company->id, $size);
+            $reserved = true;
+            $path = $file->store($storageManager->path((int) $company->id, 'supplier-catalogs'), $disk);
+
+            if (! is_string($path) || $path === '') {
+                throw new RuntimeException('File katalog gagal disimpan.');
+            }
+
+            $catalogId = DB::table('supplier_catalogs')->insertGetId([
+                'company_id' => $company->id,
+                'supplier_id' => $v['supplier_id'],
+                'uploaded_by' => auth()->id(),
+                'name' => $v['name'],
+                'currency' => strtoupper($v['currency']),
+                'valid_from' => $v['valid_from'] ?? null,
+                'valid_until' => $v['valid_until'] ?? null,
+                'original_filename' => $file->getClientOriginalName(),
+                'disk' => $disk,
+                'stored_path' => $path,
+                'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
+                'file_size' => $size,
+                'status' => 'uploaded',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         } catch (RuntimeException $exception) {
+            if ($path && $disk) {
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (Throwable) {
+                    // Quota is still released so the company is not charged for a failed request.
+                }
+            }
+            if ($reserved) {
+                $storageManager->releaseCapacity((int) $company->id, $size);
+            }
+
             throw ValidationException::withMessages(['catalog_file' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            if ($path && $disk) {
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (Throwable) {
+                    // Preserve the original exception and release the reserved quota below.
+                }
+            }
+            if ($reserved) {
+                $storageManager->releaseCapacity((int) $company->id, $size);
+            }
+
+            throw $exception;
         }
-        $path = $file->store($storageManager->path((int) $company->id, 'supplier-catalogs'), $disk);
-        $catalogId = DB::table('supplier_catalogs')->insertGetId(['company_id' => $company->id, 'supplier_id' => $v['supplier_id'], 'uploaded_by' => auth()->id(), 'name' => $v['name'], 'currency' => strtoupper($v['currency']), 'valid_from' => $v['valid_from'] ?? null, 'valid_until' => $v['valid_until'] ?? null, 'original_filename' => $file->getClientOriginalName(), 'disk' => $disk, 'stored_path' => $path, 'mime_type' => $file->getMimeType() ?: 'application/octet-stream', 'file_size' => $file->getSize(), 'status' => 'uploaded', 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('company_storage_profiles')->where('company_id', $company->id)->increment('used_bytes', (int) $file->getSize(), ['updated_at' => now()]);
+
+        $temporaryPath = null;
         try {
-            $scan = $scanner->scan(Storage::disk($disk)->path($path), strtolower($file->getClientOriginalExtension()));
+            [$scanPath, $temporaryPath] = $this->scanPath($disk, $path);
+            $scan = $scanner->scan($scanPath, strtolower($file->getClientOriginalExtension()));
             DB::transaction(function () use ($scan, $catalogId) {
                 foreach ($scan['items'] as $item) {
                     DB::table('supplier_catalog_items')->insert(['supplier_catalog_id' => $catalogId, ...collect($item)->except('raw_data')->all(), 'raw_data' => json_encode($item['raw_data'] ?? []), 'status' => 'staged', 'created_at' => now(), 'updated_at' => now()]);
@@ -60,10 +114,15 @@ class SupplierCatalogController extends Controller
             });
             AuditLogger::log('supplier_catalog_scanned', 'supplier_catalog', $catalogId, null, ['rows' => count($scan['items'])], (int) $company->id);
         } catch (Throwable $e) {
-            DB::table('supplier_catalogs')->where('id', $catalogId)->update(['status' => 'failed', 'error_message' => mb_substr($e->getMessage(), 0, 2000), 'updated_at' => now()]);
+            $message = 'Pemindaian katalog gagal. Periksa format file dan konfigurasi penyimpanan.';
+            DB::table('supplier_catalogs')->where('id', $catalogId)->update(['status' => 'failed', 'error_message' => $message, 'updated_at' => now()]);
             report($e);
 
-            return redirect()->route('supplier-catalogs.show', $catalogId)->withErrors(['catalog_file' => 'Scan gagal: '.$e->getMessage()]);
+            return redirect()->route('supplier-catalogs.show', $catalogId)->withErrors(['catalog_file' => $message]);
+        } finally {
+            if ($temporaryPath && is_file($temporaryPath)) {
+                @unlink($temporaryPath);
+            }
         }
 
         return redirect()->route('supplier-catalogs.show', $catalogId)->with('status', 'Katalog berhasil dipindai. Review baris sebelum publish.');
@@ -137,5 +196,48 @@ class SupplierCatalogController extends Controller
         AuditLogger::log('supplier_recommendation_selected', 'supplier_comparison_run', (int) $run->id, ['status' => $run->status], ['status' => 'selected', 'supplier_id' => $selected['supplier_id'], 'catalog_item_id' => $selected['catalog_item_id']], (int) $company->id);
 
         return redirect()->route('supplier-catalogs.index', ['comparison' => $run->id])->with('status', 'Rekomendasi supplier dipilih dan tercatat untuk review procurement.');
+    }
+
+    /** @return array{0:string, 1:?string} */
+    private function scanPath(string $disk, string $path): array
+    {
+        if ($disk === 'local') {
+            return [Storage::disk($disk)->path($path), null];
+        }
+
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'supersoft-catalog-');
+        if ($temporaryPath === false) {
+            throw new RuntimeException('Temporary file tidak dapat dibuat untuk pemindaian katalog.');
+        }
+
+        try {
+            $source = Storage::disk($disk)->readStream($path);
+            $target = fopen($temporaryPath, 'wb');
+            if (! is_resource($source) || ! is_resource($target)) {
+                if (is_resource($source)) {
+                    fclose($source);
+                }
+                if (is_resource($target)) {
+                    fclose($target);
+                }
+
+                throw new RuntimeException('File cloud tidak dapat disiapkan untuk pemindaian.');
+            }
+
+            try {
+                if (stream_copy_to_stream($source, $target) === false) {
+                    throw new RuntimeException('File cloud gagal disalin untuk pemindaian.');
+                }
+            } finally {
+                fclose($source);
+                fclose($target);
+            }
+        } catch (Throwable $exception) {
+            @unlink($temporaryPath);
+
+            throw $exception;
+        }
+
+        return [$temporaryPath, $temporaryPath];
     }
 }
