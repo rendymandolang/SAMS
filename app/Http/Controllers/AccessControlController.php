@@ -23,7 +23,7 @@ class AccessControlController extends Controller
                 $join->on('company_modules.module_id', '=', 'modules.id')
                     ->where('company_modules.company_id', $company->id);
             })
-            ->select('modules.*', 'company_modules.is_enabled')
+            ->select('modules.*', 'company_modules.is_licensed', 'company_modules.is_enabled', 'company_modules.licensed_until')
             ->orderBy('modules.sort_order')
             ->get();
 
@@ -83,9 +83,23 @@ class AccessControlController extends Controller
         ]);
         $requestedIds = collect($validated['modules'] ?? [])->map(fn ($id) => (int) $id)->unique();
         $plannedRequested = DB::table('modules')->whereIn('id', $requestedIds)->where('status', '!=', 'active')->exists();
+        $unlicensedRequested = DB::table('company_modules')
+            ->where('company_id', $company->id)
+            ->whereIn('module_id', $requestedIds)
+            ->where(function ($query): void {
+                $query->where('is_licensed', false)
+                    ->orWhere(function ($expiry): void {
+                        $expiry->whereNotNull('licensed_until')->whereDate('licensed_until', '<', today());
+                    });
+            })
+            ->exists();
 
         if ($plannedRequested) {
             throw ValidationException::withMessages(['modules' => __('access.errors.planned_module')]);
+        }
+
+        if ($unlicensedRequested) {
+            throw ValidationException::withMessages(['modules' => 'Modul belum termasuk dalam lisensi perusahaan atau masa lisensinya telah berakhir.']);
         }
 
         $modules = DB::table('modules')->orderBy('sort_order')->get();
@@ -98,8 +112,16 @@ class AccessControlController extends Controller
 
         DB::transaction(function () use ($modules, $requestedIds, $company): void {
             foreach ($modules as $module) {
+                $entitlement = DB::table('company_modules')
+                    ->where('company_id', $company->id)
+                    ->where('module_id', $module->id)
+                    ->first();
+                $licensed = $module->key === 'core' || (
+                    $entitlement?->is_licensed
+                    && (! $entitlement->licensed_until || $entitlement->licensed_until >= today()->toDateString())
+                );
                 $enabled = $module->key === 'core'
-                    || ($module->status === 'active' && $requestedIds->contains((int) $module->id));
+                    || ($licensed && $module->status === 'active' && $requestedIds->contains((int) $module->id));
 
                 DB::table('company_modules')
                     ->where('company_id', $company->id)

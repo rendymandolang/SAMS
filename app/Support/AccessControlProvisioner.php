@@ -42,14 +42,22 @@ class AccessControlProvisioner
             foreach (ModuleCatalog::modules() as $key => $definition) {
                 $module = $modules->get($key);
 
-                DB::table('company_modules')->insertOrIgnore([
+                $entitlement = [
                     'company_id' => $companyId,
                     'module_id' => $module->id,
-                    'is_enabled' => $definition['status'] === 'active',
+                    'is_enabled' => Schema::hasColumn('company_modules', 'is_licensed')
+                        ? $key === 'core'
+                        : $definition['status'] === 'active',
                     'settings' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
-                ]);
+                ];
+
+                if (Schema::hasColumn('company_modules', 'is_licensed')) {
+                    $entitlement['is_licensed'] = $key === 'core';
+                }
+
+                DB::table('company_modules')->insertOrIgnore($entitlement);
 
                 if ($key === 'core' || $definition['status'] !== 'active') {
                     DB::table('company_modules')

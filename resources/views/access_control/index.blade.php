@@ -48,6 +48,7 @@
                             @php
                                 $isCore = $module->key === 'core';
                                 $isPlanned = $module->status === 'planned';
+                                $isLicensed = $isCore || ($module->is_licensed && (! $module->licensed_until || $module->licensed_until >= today()->toDateString()));
                                 $moduleNameKey = 'access.modules.'.$module->key.'.name';
                                 $moduleDescriptionKey = 'access.modules.'.$module->key.'.description';
                                 $moduleName = \Illuminate\Support\Facades\Lang::has($moduleNameKey) ? __($moduleNameKey) : $module->name;
@@ -56,7 +57,7 @@
                             <label class="entitlement-card {{ $module->is_enabled ? 'enabled' : '' }} {{ $isPlanned ? 'planned' : '' }}">
                                 <span class="entitlement-card__top">
                                     <span class="entitlement-icon"><x-icon name="{{ match($module->key) { 'assets' => 'asset', 'inventory' => 'inventory', 'procurement' => 'procurement', 'core' => 'settings', default => 'reports' } }}" /></span>
-                                    <span class="badge {{ $isPlanned ? 'next' : '' }}">{{ $isPlanned ? __('access.labels.planned') : ($module->is_enabled ? __('access.labels.enabled') : __('access.labels.disabled')) }}</span>
+                                    <span class="badge {{ ($isPlanned || ! $isLicensed) ? 'next' : '' }}">{{ $isPlanned ? __('access.labels.planned') : (! $isLicensed ? 'Not licensed' : ($module->is_enabled ? __('access.labels.enabled') : __('access.labels.disabled'))) }}</span>
                                 </span>
                                 <span class="entitlement-card__body">
                                     <strong>{{ $moduleName }}</strong>
@@ -66,8 +67,8 @@
                                     @if ($isCore)
                                         <input type="hidden" name="modules[]" value="{{ $module->id }}">
                                     @endif
-                                    <input name="modules[]" type="checkbox" value="{{ $module->id }}" @checked($module->is_enabled) @disabled($isCore || $isPlanned)>
-                                    <span>{{ $isCore ? __('access.labels.locked') : ($isPlanned ? __('access.help.planned_locked') : __('access.labels.active')) }}</span>
+                                    <input name="modules[]" type="checkbox" value="{{ $module->id }}" @checked($module->is_enabled) @disabled($isCore || $isPlanned || ! $isLicensed)>
+                                    <span>{{ $isCore ? __('access.labels.locked') : ($isPlanned ? __('access.help.planned_locked') : (! $isLicensed ? 'Contact SuperSoft' : __('access.labels.active'))) }}</span>
                                 </span>
                             </label>
                         @empty

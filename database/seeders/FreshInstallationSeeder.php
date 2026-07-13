@@ -73,7 +73,28 @@ class FreshInstallationSeeder extends Seeder
         DB::table('company_modules')
             ->where('company_id', $companyId)
             ->whereIn('module_id', DB::table('modules')->whereIn('key', $activeKeys)->select('id'))
-            ->update(['is_enabled' => true, 'updated_at' => now()]);
+            ->update(['is_licensed' => true, 'is_enabled' => true, 'updated_at' => now()]);
+
+        DB::table('company_subscriptions')->insert([
+            'company_id' => $companyId,
+            'plan_code' => 'internal-enterprise',
+            'license_model' => 'internal',
+            'billing_cycle' => 'none',
+            'status' => 'active',
+            'starts_on' => today()->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('company_storage_profiles')->insert([
+            'company_id' => $companyId,
+            'mode' => 'local',
+            'provider' => 'local',
+            'status' => 'active',
+            'root_prefix' => 'companies/'.$companyId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $provisioner->syncCompany($companyId);
     }

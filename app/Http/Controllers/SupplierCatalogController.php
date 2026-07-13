@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\CompanyStorageManager;
 use App\Support\SupplierCatalogScanner;
 use App\Support\SupplierComparisonService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RuntimeException;
 use Throwable;
 
 class SupplierCatalogController extends Controller
@@ -39,10 +42,17 @@ class SupplierCatalogController extends Controller
         $v = $request->validate(['supplier_id' => ['required', 'integer'], 'name' => ['required', 'string', 'max:255'], 'currency' => ['required', 'string', 'size:3'], 'valid_from' => ['nullable', 'date'], 'valid_until' => ['nullable', 'date', 'after_or_equal:valid_from'], 'catalog_file' => ['required', 'file', 'max:20480', 'mimes:csv,txt,xlsx,xls,pdf']]);
         abort_unless(DB::table('suppliers')->where('company_id', $company->id)->where('id', $v['supplier_id'])->exists(), 404);
         $file = $request->file('catalog_file');
-        $path = $file->store('supplier-catalogs/'.$company->public_id);
-        $catalogId = DB::table('supplier_catalogs')->insertGetId(['company_id' => $company->id, 'supplier_id' => $v['supplier_id'], 'uploaded_by' => auth()->id(), 'name' => $v['name'], 'currency' => strtoupper($v['currency']), 'valid_from' => $v['valid_from'] ?? null, 'valid_until' => $v['valid_until'] ?? null, 'original_filename' => $file->getClientOriginalName(), 'stored_path' => $path, 'mime_type' => $file->getMimeType() ?: 'application/octet-stream', 'status' => 'uploaded', 'created_at' => now(), 'updated_at' => now()]);
+        $storageManager = app(CompanyStorageManager::class);
         try {
-            $scan = $scanner->scan(Storage::path($path), strtolower($file->getClientOriginalExtension()));
+            $disk = $storageManager->writableDisk((int) $company->id);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['catalog_file' => $exception->getMessage()]);
+        }
+        $path = $file->store($storageManager->path((int) $company->id, 'supplier-catalogs'), $disk);
+        $catalogId = DB::table('supplier_catalogs')->insertGetId(['company_id' => $company->id, 'supplier_id' => $v['supplier_id'], 'uploaded_by' => auth()->id(), 'name' => $v['name'], 'currency' => strtoupper($v['currency']), 'valid_from' => $v['valid_from'] ?? null, 'valid_until' => $v['valid_until'] ?? null, 'original_filename' => $file->getClientOriginalName(), 'disk' => $disk, 'stored_path' => $path, 'mime_type' => $file->getMimeType() ?: 'application/octet-stream', 'file_size' => $file->getSize(), 'status' => 'uploaded', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('company_storage_profiles')->where('company_id', $company->id)->increment('used_bytes', (int) $file->getSize(), ['updated_at' => now()]);
+        try {
+            $scan = $scanner->scan(Storage::disk($disk)->path($path), strtolower($file->getClientOriginalExtension()));
             DB::transaction(function () use ($scan, $catalogId) {
                 foreach ($scan['items'] as $item) {
                     DB::table('supplier_catalog_items')->insert(['supplier_catalog_id' => $catalogId, ...collect($item)->except('raw_data')->all(), 'raw_data' => json_encode($item['raw_data'] ?? []), 'status' => 'staged', 'created_at' => now(), 'updated_at' => now()]);

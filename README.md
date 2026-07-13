@@ -89,6 +89,8 @@ Database instalasi baru hanya berisi:
 
 Panduan lengkap tersedia di [SuperSoft Enterprise Foundation](docs/SUPERSOFT_ENTERPRISE_FOUNDATION.md) dan [Production Readiness](docs/PRODUCTION_READINESS.md).
 
+Fondasi entitlement, subscription, BYOC, dan managed storage dijelaskan dalam [Enterprise Licensing and Storage](docs/ENTERPRISE_LICENSING_AND_STORAGE.md).
+
 ## Quality Gates
 
 Sebelum perubahan digabungkan atau dipasang ke server:

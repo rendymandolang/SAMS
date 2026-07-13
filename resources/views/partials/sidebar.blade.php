@@ -196,6 +196,7 @@
                         <a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}"><span>{{ __('navigation.items.audit_logs') }}</span></a>
                     @endif
                     @if ($user->hasPermission('core.settings.manage'))
+                        <a class="nav-link {{ request()->routeIs('settings.enterprise*') ? 'active' : '' }}" href="{{ route('settings.enterprise') }}"><span>Enterprise & Storage</span></a>
                         <a class="nav-link {{ request()->routeIs('settings.company.*') ? 'active' : '' }}" href="{{ route('settings.company.edit') }}"><span>{{ __('navigation.items.company_settings') }}</span></a>
                         <a class="nav-link {{ request()->routeIs('settings.period-locks.*') ? 'active' : '' }}" href="{{ route('settings.period-locks.index') }}"><span>{{ __('navigation.items.period_locks') }}</span></a>
                         <a class="nav-link {{ request()->routeIs('data-connections.*') ? 'active' : '' }}" href="{{ route('data-connections.index') }}"><span>Data Connections</span></a>

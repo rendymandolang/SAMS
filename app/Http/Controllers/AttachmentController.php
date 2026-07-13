@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Support\AccessManager;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
+use App\Support\CompanyStorageManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
@@ -67,13 +70,20 @@ class AttachmentController extends Controller
         ]);
 
         $file = $validated['attachment'];
-        $path = $file->store("attachments/{$type}/{$id}", 'local');
+        $storageManager = app(CompanyStorageManager::class);
+        try {
+            $disk = $storageManager->writableDisk((int) $entity->company_id);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['attachment' => $exception->getMessage()]);
+        }
+        $directory = $storageManager->path((int) $entity->company_id, "attachments/{$type}/{$id}");
+        $path = $file->store($directory, $disk);
 
         $attachmentId = DB::table('attachments')->insertGetId([
             'company_id' => $entity->company_id,
             'attachable_type' => $type,
             'attachable_id' => $id,
-            'disk' => 'local',
+            'disk' => $disk,
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
@@ -82,6 +92,10 @@ class AttachmentController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        DB::table('company_storage_profiles')
+            ->where('company_id', $entity->company_id)
+            ->increment('used_bytes', (int) $file->getSize(), ['updated_at' => now()]);
 
         AuditLogger::log('attachment_uploaded', $type, $id, null, [
             'attachment_id' => $attachmentId,
@@ -112,6 +126,13 @@ class AttachmentController extends Controller
         Storage::disk($row->disk)->delete($row->path);
 
         DB::table('attachments')->where('id', $row->id)->delete();
+        $profile = DB::table('company_storage_profiles')->where('company_id', $row->company_id)->first();
+        if ($profile) {
+            DB::table('company_storage_profiles')->where('id', $profile->id)->update([
+                'used_bytes' => max(0, (int) $profile->used_bytes - (int) $row->size),
+                'updated_at' => now(),
+            ]);
+        }
 
         AuditLogger::log('attachment_deleted', $row->attachable_type, (int) $row->attachable_id, [
             'attachment_id' => $row->id,

@@ -34,13 +34,19 @@ class AccessManager
         $companyId = $this->companyContext->id();
         $cacheKey = $companyId.':'.$moduleKey;
 
-        return $this->moduleCache[$cacheKey] ??= DB::table('company_modules')
-            ->join('modules', 'modules.id', '=', 'company_modules.module_id')
-            ->where('company_modules.company_id', $companyId)
-            ->where('modules.key', $moduleKey)
-            ->where('modules.status', 'active')
-            ->where('company_modules.is_enabled', true)
-            ->exists();
+        return $this->moduleCache[$cacheKey] ??= $this->subscriptionAllowsAccess($companyId)
+            && DB::table('company_modules')
+                ->join('modules', 'modules.id', '=', 'company_modules.module_id')
+                ->where('company_modules.company_id', $companyId)
+                ->where('modules.key', $moduleKey)
+                ->where('modules.status', 'active')
+                ->where('company_modules.is_licensed', true)
+                ->where(function ($query): void {
+                    $query->whereNull('company_modules.licensed_until')
+                        ->orWhereDate('company_modules.licensed_until', '>=', today());
+                })
+                ->where('company_modules.is_enabled', true)
+                ->exists();
     }
 
     public function allows(string $permissionKey, ?User $user = null): bool
@@ -142,5 +148,23 @@ class AccessManager
             && Schema::hasTable('roles')
             && Schema::hasTable('role_permissions')
             && Schema::hasTable('permissions');
+    }
+
+    private function subscriptionAllowsAccess(int $companyId): bool
+    {
+        if (! Schema::hasTable('company_subscriptions')) {
+            return true;
+        }
+
+        $subscription = DB::table('company_subscriptions')->where('company_id', $companyId)->first();
+        if (! $subscription || ! in_array($subscription->status, ['active', 'trial', 'grace'], true)) {
+            return false;
+        }
+
+        if (! $subscription->expires_on || $subscription->expires_on >= today()->toDateString()) {
+            return true;
+        }
+
+        return $subscription->grace_ends_on && $subscription->grace_ends_on >= today()->toDateString();
     }
 }

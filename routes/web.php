@@ -17,6 +17,7 @@ use App\Http\Controllers\CompanyContextController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataConnectionController;
+use App\Http\Controllers\EnterpriseSettingsController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\LocaleController;
@@ -67,6 +68,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/data-connections', [DataConnectionController::class, 'index'])->name('data-connections.index');
         Route::post('/settings/data-connections/{connection}/test', [DataConnectionController::class, 'test'])->name('data-connections.test');
         Route::put('/settings/data-connections/{connection}/toggle', [DataConnectionController::class, 'toggle'])->name('data-connections.toggle');
+        Route::get('/settings/enterprise', [EnterpriseSettingsController::class, 'index'])->name('settings.enterprise');
+        Route::put('/settings/enterprise/storage', [EnterpriseSettingsController::class, 'updateStorage'])->name('settings.enterprise.storage.update');
+        Route::post('/settings/enterprise/storage/test', [EnterpriseSettingsController::class, 'testStorage'])->name('settings.enterprise.storage.test');
     });
     Route::middleware(['module:core', 'permission:core.access.manage'])->group(function () {
         Route::get('/settings/access-control', [AccessControlController::class, 'index'])->name('access-control.index');

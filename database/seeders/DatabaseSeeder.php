@@ -533,5 +533,37 @@ class DatabaseSeeder extends Seeder
         }
 
         app(AccessControlProvisioner::class)->syncAllCompanies();
+
+        DB::table('company_modules')
+            ->where('company_id', $company->id)
+            ->whereIn('module_id', DB::table('modules')->where('status', 'active')->select('id'))
+            ->update(['is_licensed' => true, 'is_enabled' => true]);
+
+        DB::table('company_subscriptions')->updateOrInsert(
+            ['company_id' => $company->id],
+            [
+                'plan_code' => 'development-suite',
+                'license_model' => 'internal',
+                'billing_cycle' => 'none',
+                'status' => 'active',
+                'starts_on' => today()->toDateString(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
+
+        DB::table('company_storage_profiles')->updateOrInsert(
+            ['company_id' => $company->id],
+            [
+                'mode' => 'local',
+                'provider' => 'local',
+                'status' => 'active',
+                'root_prefix' => 'companies/'.$company->id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
+
+        app(AccessControlProvisioner::class)->syncAllCompanies();
     }
 }
