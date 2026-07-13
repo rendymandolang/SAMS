@@ -1,11 +1,11 @@
 <?php
 
-use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AccessControlController;
+use App\Http\Controllers\AccountingCloseController;
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AccountingReportController;
-use App\Http\Controllers\AccountingCloseController;
 use App\Http\Controllers\AiInsightController;
+use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetMaintenanceReportController;
 use App\Http\Controllers\AssetRegisterController;
@@ -21,17 +21,18 @@ use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\PublicInfoController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
-use App\Http\Controllers\PublicInfoController;
 use App\Http\Controllers\PurchasingCycleReportController;
 use App\Http\Controllers\ReportCenterController;
 use App\Http\Controllers\StockOnHandController;
 use App\Http\Controllers\StockOpnameController;
-use App\Http\Controllers\SupplierPerformanceReportController;
 use App\Http\Controllers\SupplierCatalogController;
+use App\Http\Controllers\SupplierPerformanceReportController;
 use App\Http\Controllers\TransactionPeriodLockController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Middleware\FilterBlankJournalLines;
 use Illuminate\Support\Facades\Route;
 
 foreach (['role', 'user', 'attachment', 'id', 'purchaseRequest', 'purchaseOrder', 'goodsReceipt', 'goodsReceiptItem', 'asset', 'maintenance', 'stockOpname', 'journal'] as $numericParameter) {
@@ -86,10 +87,23 @@ Route::middleware('auth')->group(function () {
         ->middleware(['module:core', 'module:procurement', 'permission:core.approvals.view'])
         ->name('approvals.index');
     Route::get('/ai-insights', [AiInsightController::class, 'index'])->middleware(['module:intelligence', 'permission:intelligence.view'])->name('ai-insights.index');
-    Route::middleware(['module:accounting','permission:accounting.view'])->group(function(){Route::get('/accounting',[AccountingController::class,'index'])->name('accounting.index');Route::get('/accounting/reports/{report}',[AccountingReportController::class,'show'])->name('accounting.reports.show');Route::get('/accounting/journals/{journal}',[AccountingController::class,'show'])->name('accounting.show');Route::get('/accounting/journals/{journal}/print',[AccountingController::class,'print'])->name('accounting.print');});
-    Route::middleware(['module:accounting','permission:accounting.manage'])->group(function(){Route::get('/accounting/journals/create',[AccountingController::class,'create'])->name('accounting.create');Route::post('/accounting/journals',[AccountingController::class,'store'])->middleware(\App\Http\Middleware\FilterBlankJournalLines::class)->name('accounting.store');});
-    Route::post('/accounting/journals/{journal}/post',[AccountingController::class,'post'])->middleware(['module:accounting','permission:accounting.post'])->name('accounting.post');
-    Route::middleware(['module:accounting','permission:accounting.post'])->group(function(){Route::get('/accounting/close-month',[AccountingCloseController::class,'index'])->name('accounting.close-month');Route::post('/accounting/close-month',[AccountingCloseController::class,'store'])->name('accounting.close-month.store');Route::delete('/accounting/close-month/{lock}',[AccountingCloseController::class,'destroy'])->name('accounting.close-month.destroy');});
+    Route::middleware(['module:accounting', 'permission:accounting.view'])->group(function () {
+        Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');
+        Route::get('/accounting/reports/{report}', [AccountingReportController::class, 'show'])->name('accounting.reports.show');
+        Route::get('/accounting/journals/{journal}', [AccountingController::class, 'show'])->name('accounting.show');
+        Route::get('/accounting/journals/{journal}/print', [AccountingController::class, 'print'])->name('accounting.print');
+    });
+    Route::middleware(['module:accounting', 'permission:accounting.manage'])->group(function () {
+        Route::post('/accounting/accounts', [AccountingController::class, 'storeAccount'])->name('accounting.accounts.store');
+        Route::get('/accounting/journals/create', [AccountingController::class, 'create'])->name('accounting.create');
+        Route::post('/accounting/journals', [AccountingController::class, 'store'])->middleware(FilterBlankJournalLines::class)->name('accounting.store');
+    });
+    Route::post('/accounting/journals/{journal}/post', [AccountingController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.post');
+    Route::middleware(['module:accounting', 'permission:accounting.post'])->group(function () {
+        Route::get('/accounting/close-month', [AccountingCloseController::class, 'index'])->name('accounting.close-month');
+        Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');
+        Route::delete('/accounting/close-month/{lock}', [AccountingCloseController::class, 'destroy'])->name('accounting.close-month.destroy');
+    });
     Route::post('/ai-insights/generate', [AiInsightController::class, 'generate'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.generate');
     Route::post('/ai-insights/query', [AiInsightController::class, 'query'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.query');
     Route::post('/ai-insights/narrative', [AiInsightController::class, 'narrative'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.narrative');

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\CompanyContext;
 use App\Models\User;
+use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 

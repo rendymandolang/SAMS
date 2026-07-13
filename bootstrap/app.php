@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsurePermission;
-use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

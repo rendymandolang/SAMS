@@ -1,9 +1,31 @@
-# SAMS
+# SuperSoft Enterprise
 
-Super Asset Management System (SAMS) adalah platform operasional modular untuk
-inventory, purchasing, budgeting, approval, asset, dan audit.
+SuperSoft Enterprise adalah platform bisnis modular untuk hospitality dan wellness industry yang dikembangkan oleh **PT Supersoft Global Investama**.
 
-## Local Development
+Domain resmi yang direncanakan: **supersoft.id**.
+
+## Product Suite
+
+- **SaMS** — Super Asset Management System
+- **SaS** — Super Accounting System
+- **SPoS** — Super Point of Sale
+- **SHMS** — Super Hotel Management System
+- **SHRiS** — Super Human Resource Information System
+
+Setiap perusahaan hanya memperoleh akses ke modul dan fitur yang tercantum dalam lisensinya. Modul yang digunakan bersama berbagi master data, kontrol akses, audit trail, dan integration engine yang sama.
+
+## Technology Foundation
+
+- Laravel 13 dan PHP 8.3+
+- MySQL 8+
+- Blade, Tailwind CSS, dan Vite
+- Vue untuk layar operasional real-time apabila dibutuhkan
+- Database queue, cache, dan session
+- Private document storage dengan opsi cloud yang dapat dikembangkan
+
+Laravel menjadi transactional core. Framework frontend tambahan hanya digunakan jika memberi manfaat yang jelas pada interaksi real-time; satu layar tidak mencampur beberapa framework frontend.
+
+## Local Installation
 
 Kebutuhan lokal:
 
@@ -11,154 +33,76 @@ Kebutuhan lokal:
 - PHP 8.3+
 - MySQL 8+
 - Composer 2+
-- Node.js dan npm
+- Node.js 20.19+ atau 22.12+
 
-Konfigurasi awal:
+Salin konfigurasi dan isi kredensial administrator awal:
 
 ```powershell
 Copy-Item .env.example .env
 composer install
 php artisan key:generate
-php artisan migrate
 npm install
-npm run dev
-php artisan serve
+npm run build
 ```
 
-Konfigurasi database Laragon standar:
+Isi nilai berikut di `.env`:
 
 ```dotenv
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=sams
-DB_USERNAME=root
-DB_PASSWORD=
+INITIAL_ADMIN_NAME="SuperSoft Administrator"
+INITIAL_ADMIN_EMAIL=admin@supersoft.local
+INITIAL_ADMIN_PASSWORD="use-a-strong-local-password"
 ```
 
-Jangan menyimpan `.env`, kata sandi, token, atau data produksi ke Git.
-
-## Current Foundation
-
-- Laravel 13
-- MySQL database `sams`
-- Login/logout lokal
-- Role awal user (`super_admin`, `staff`) dan status aktif
-- Role/permission dasar untuk `super_admin`, `purchasing`, `warehouse`, `finance`, dan `staff`
-- User Management untuk super admin: tambah user, edit role/status, dan reset password
-- Audit Trail dasar untuk user, master data, approval, submit, dan posting dokumen
-- Dashboard awal SAMS dengan sidebar modul
-- Seeder akun admin, company, branch, department, unit, supplier, gudang, kategori, dan item demo
-- Purchase Request draft, edit draft, detail, nomor dokumen otomatis, budget line, validasi sisa budget, submit, approve, dan reject awal
-- Purchase Order draft dari Purchase Request approved, submit, dan approve awal
-- Print/Save PDF Purchase Order dengan format dokumen A4, supplier, item, total, dan area tanda tangan
-- Print/Save PDF Purchase Request dan Goods Receipt dengan format dokumen A4 dan area tanda tangan
-- Goods Receipt draft dari Purchase Order approved, posting GR, dan stock movement masuk gudang
-- Stock On Hand per gudang dari aggregate stock movement
-- Stock Opname draft dari saldo sistem, hasil hitung fisik, posting adjustment selisih plus/minus ke stock movement
-- Print/Save PDF Stock Opname dengan ringkasan selisih, item, nilai variance, dan area tanda tangan
-- Laporan Mutasi Stok dengan filter tanggal, gudang, item, saldo awal, movement masuk/keluar, dan saldo berjalan
-- Purchasing Cycle Report untuk tracking PR ke PO sampai GR, progress receipt, variance nilai, status kontrol, dan print landscape
-- Supplier Performance Report untuk scorecard supplier berdasarkan PO, penerimaan, reject rate, completion rate, watch list, dan print landscape
-- Budget Control report dengan allocated, committed, actual, remaining, status risiko budget, dan print landscape
-- Budget actualization dari Goods Receipt: committed budget turun dan actual budget naik saat GR diposting
-- Approval Center untuk melihat PR/PO pending dan melakukan approval dari satu layar kontrol
-- Asset Register awal untuk mencatat aset, lokasi, departemen, kondisi, nilai perolehan, audit, dan print asset card
-- Asset registration dari Goods Receipt posted untuk item bertipe asset, termasuk link balik ke asset card
-- Asset Maintenance work order untuk histori perawatan, biaya, status penyelesaian, update kondisi aset, dan print WO
-- Asset Maintenance History report dengan overdue, biaya, ranking asset, days open, control status, dan print landscape
-- Export CSV untuk Budget Control, Purchasing Cycle, Supplier Performance, Asset Maintenance History, dan Laporan Mutasi Stok agar data kontrol bisa dibuka di Excel
-- Attachment dokumen untuk PR, PO, GR, Asset Register, dan Asset Maintenance
-- Executive dashboard visual dengan operational health snapshot untuk purchasing, budget, asset, dan maintenance
-- Company Context aktif untuk membatasi dashboard, transaksi, attachment, audit, dan laporan ke perusahaan milik user
-- Company Settings untuk nama usaha/PT, NPWP, alamat, telepon, email, logo, timezone, mata uang, format tanggal/waktu, dan tema warna
-- UI bilingual terbatas Bahasa Indonesia dan English dengan preferensi sesi serta bahasa bawaan perusahaan
-- Sidebar modular yang sticky di desktop, menjadi drawer di HP/tablet, dan Report Center dengan visual kartu adaptif
-- Identitas logo perusahaan dipakai pada sidebar serta dokumen print yang sudah tersedia
-- Multi-company, multi-branch, dan department
-- Supplier dan item master
-- Department budget
-- Purchase Request dan Purchase Order
-- Goods Receipt dan stock ledger
-- Stock Opname dan adjustment ledger
-- Approval workflow
-- Attachments dan audit log
-- Transaction state guard dan row locking untuk mencegah submit, approve, reject, atau posting ganda pada PR, PO, GR, dan Stock Opname
-- Idempotency key stock movement per baris Goods Receipt dan Stock Opname
-- Transaction period locking per perusahaan dan modul untuk menutup periode Procurement atau Inventory beserta audit buka/tutup periode
-- Reversal Goods Receipt dan Stock Opname berbasis contra movement tanpa menghapus ledger, termasuk pemulihan budget dan received quantity
-- AI Insight Center read-only dengan local analytics bawaan, provider OpenAI opsional, company scope, permission, usage metadata, dan audit trail
-- AI forecasting lokal untuk reorder stok, anomali harga PO, supplier risk, serta prediksi maintenance dengan risk score dan confidence
-- Natural-language operational query tanpa SQL bebas, narrative report, serta request/token/provider guardrail per perusahaan
-- Supplier Catalog Upload & Scanner untuk CSV/XLSX/XLS/PDF, staging review, normalisasi unit lintas kategori, publish, dan AI price comparison terhadap budget
-
-Blueprint database tersedia di
-[`docs/SAMS_DATABASE_ERD_V1.md`](docs/SAMS_DATABASE_ERD_V1.md).
-
-## Local Login
-
-Setelah menjalankan migration dan seeder:
+Buat instalasi kosong tanpa supplier, item, budget, transaksi, aset, atau COA:
 
 ```powershell
-php artisan migrate --seed
+php artisan migrate:fresh --seed --seeder=Database\Seeders\FreshInstallationSeeder
 php artisan serve
 ```
 
-Buka aplikasi lokal, lalu login dengan:
+Jangan menyimpan `.env`, kata sandi, token, API key, data produksi, atau backup database ke Git.
 
-- Email: `admin@sams.local`
-- Password: `password`
+## Development Data
 
-Password ini hanya untuk development lokal dan wajib diganti sebelum staging/VPS.
+`DatabaseSeeder` hanya digunakan sebagai fixture pengembangan dan automated test. Instalasi perusahaan wajib menggunakan `FreshInstallationSeeder`.
 
-Seeder juga menyediakan user demo role:
+Database instalasi baru hanya berisi:
 
-- `purchasing@sams.local` / `password`
-- `warehouse@sams.local` / `password`
-- `finance@sams.local` / `password`
-- `staff@sams.local` / `password`
+- PT Supersoft Global Investama;
+- satu Head Office;
+- administrator awal;
+- katalog modul, permission, role, dan entitlement;
+- tidak ada COA atau transaksi operasional.
 
-## Demo Master Data
+## Security Baseline
 
-Seeder lokal mengisi data sample realistis untuk hotel/resto:
+- CSRF protection untuk perubahan data melalui web.
+- Query binding melalui ORM dan query builder.
+- Login throttling berdasarkan email dan alamat IP.
+- Session regeneration setelah login.
+- Role, permission, module entitlement, dan company scope.
+- Security headers dan private cache policy.
+- Attachment disimpan secara private dan diunduh melalui authorization check.
+- Audit trail, transaction lock, idempotency, period lock, dan reversal ledger.
+- Debug mode harus dinonaktifkan pada production.
+- HTTPS dan secure session cookie wajib pada production.
 
-- kategori item seperti F&B, Housekeeping, Linen, Engineering, Office, dan Asset;
-- satuan seperti PCS, KG, LTR, BTL, PACK, ROLL, dan SET;
-- supplier demo;
-- lokasi gudang/outlet;
-- item operasional seperti beras, coffee beans, air mineral, linen, tissue, lampu, chemical, dan asset laptop.
-- budget tahunan sample per departemen dan account code.
+Panduan lengkap tersedia di [SuperSoft Enterprise Foundation](docs/SUPERSOFT_ENTERPRISE_FOUNDATION.md) dan [Production Readiness](docs/PRODUCTION_READINESS.md).
 
-Data ini hanya sample lokal. Semua bisa diedit atau dihapus dari halaman Master Data sebelum website live.
+## Quality Gates
 
-## Next Build Steps
+Sebelum perubahan digabungkan atau dipasang ke server:
 
-Urutan kerja berikutnya:
+```powershell
+php vendor/bin/pint --test
+php artisan test
+composer audit
+npm audit
+npm run build
+```
 
-1. Role, permission, dan data scope yang lebih detail per perusahaan, modul, cabang, serta departemen.
-2. Module entitlement untuk menentukan modul yang dibeli dan diaktifkan setiap perusahaan.
-3. Transaction hardening lanjutan: approval tambahan untuk reversal bernilai besar dan closing checklist (state machine, idempotency, period locking, serta reversal inventory sudah tersedia).
-4. API v1 dan mobile-ready authentication.
-5. Inventory costing, asset lifecycle, accounting journal kernel, lalu POS.
+Semua perubahan struktur database harus menggunakan migration. Perubahan transaksi keuangan atau inventory harus memiliki automated test untuk company scope, authorization, period lock, idempotency, dan audit trail.
 
-## VPS Migration Strategy
+## Ownership
 
-Saat aplikasi siap dipindahkan:
-
-1. Siapkan Linux VPS dengan Nginx, PHP-FPM, MySQL/PostgreSQL, Redis, dan SSL.
-2. Deploy source code melalui Git.
-3. Buat `.env` produksi langsung di VPS.
-4. Jalankan `composer install --no-dev --optimize-autoloader`.
-5. Jalankan `php artisan migrate --force`.
-6. Bangun aset dengan `npm ci && npm run build`.
-7. Aktifkan queue worker, scheduler, backup database, dan monitoring.
-
-Database produksi tidak disalin dengan menimpa migration. Data lokal yang perlu
-dipertahankan akan diekspor, diverifikasi, lalu diimpor melalui prosedur migrasi.
-
-Checklist lengkap backup, deployment, monitoring, verifikasi, dan rollback tersedia di
-[`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md).
-
-## Local-First Product Strategy
-
-Seluruh modul SuperSoft/SAMS, termasuk AI, diselesaikan dan diuji di lokal. VPS dipakai setelah modul siap sebagai lingkungan staging/production, bukan sebagai tempat pembangunan fitur. Arsitektur dan guardrail AI tersedia di [`docs/AI_INSIGHT_CENTER.md`](docs/AI_INSIGHT_CENTER.md).
+Copyright © PT Supersoft Global Investama. Seluruh source code, desain produk, dokumentasi, dan identitas SuperSoft Enterprise dikelola sebagai aset perusahaan.

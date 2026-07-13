@@ -517,6 +517,21 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        foreach ([
+            ['code' => '1100', 'name' => 'Cash and Bank', 'type' => 'asset', 'normal_balance' => 'debit'],
+            ['code' => '6100', 'name' => 'Operating Expense', 'type' => 'expense', 'normal_balance' => 'debit'],
+        ] as $account) {
+            DB::table('gl_accounts')->updateOrInsert(
+                ['company_id' => $company->id, 'code' => $account['code']],
+                $account + [
+                    'allow_posting' => true,
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            );
+        }
+
         app(AccessControlProvisioner::class)->syncAllCompanies();
     }
 }
