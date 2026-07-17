@@ -19,6 +19,23 @@ class CompanyStorageManager
             ->firstOrFail();
     }
 
+    /** @return array{used_bytes:int, quota_bytes:?int, percentage:?float, level:string} */
+    public function usage(int $companyId): array
+    {
+        $profile = $this->profile($companyId);
+        $used = (int) $profile->used_bytes;
+        $quota = $profile->quota_bytes === null ? null : (int) $profile->quota_bytes;
+        $percentage = $quota && $quota > 0 ? min(100, round(($used / $quota) * 100, 2)) : null;
+        $level = match (true) {
+            $percentage !== null && $percentage >= 95 => 'critical',
+            $percentage !== null && $percentage >= 85 => 'high',
+            $percentage !== null && $percentage >= 70 => 'warning',
+            default => 'normal',
+        };
+
+        return ['used_bytes' => $used, 'quota_bytes' => $quota, 'percentage' => $percentage, 'level' => $level];
+    }
+
     public function writableDisk(int $companyId): string
     {
         $profile = $this->profile($companyId);

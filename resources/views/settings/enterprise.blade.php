@@ -22,6 +22,14 @@
         @if($errors->any())
             <div class="error">{{ $errors->first() }}</div>
         @endif
+        @if(in_array($storageUsage['level'], ['warning', 'high', 'critical'], true))
+            <div class="error" style="color:#92400e;background:#fef3c7">
+                Storage telah menggunakan {{ number_format($storageUsage['percentage'], 2, ',', '.') }}% dari kuota.
+                @if($storageUsage['level'] === 'critical') Hentikan upload non-prioritas dan tambah kapasitas segera.
+                @elseif($storageUsage['level'] === 'high') Siapkan penambahan kapasitas atau arsipkan dokumen lama.
+                @else Pantau pertumbuhan penyimpanan perusahaan.@endif
+            </div>
+        @endif
 
         <section class="grid stats" style="margin-bottom:18px">
             <div class="card metric-card">
@@ -65,7 +73,7 @@
             </div>
         </section>
 
-        <section class="card">
+        <section class="card" style="margin-bottom:18px">
             <div class="toolbar section-heading">
                 <div>
                     <h2>Data Storage</h2>
@@ -140,6 +148,44 @@
                 @csrf
                 <button class="button secondary inline" type="submit">Test Current Connection</button>
             </form>
+        </section>
+
+        <section class="card">
+            <div class="toolbar section-heading">
+                <div>
+                    <h2>Encrypted Company Backup</h2>
+                    <p class="muted">Snapshot data perusahaan dienkripsi sebelum disimpan. Setiap backup langsung diuji melalui dekripsi, checksum, dan validasi struktur.</p>
+                </div>
+                <form method="POST" action="{{ route('settings.enterprise.backups.store') }}">
+                    @csrf
+                    <button class="button inline" type="submit">Create & Verify Backup</button>
+                </form>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Created</th><th>Size</th><th>Tables / Rows</th><th>Status</th><th>Verification</th><th></th></tr></thead>
+                    <tbody>
+                        @forelse($backups as $backup)
+                            <tr>
+                                <td>{{ $backup->created_at }}<br><span class="muted">{{ $backup->creator_name }}</span></td>
+                                <td>{{ number_format($backup->size_bytes / 1024, 2, ',', '.') }} KB</td>
+                                <td>{{ $backup->table_count }} / {{ number_format($backup->row_count, 0, ',', '.') }}</td>
+                                <td><span class="badge">{{ str($backup->status)->replace('_', ' ')->title() }}</span></td>
+                                <td>{{ $backup->verification_message ?: 'Belum diverifikasi' }}</td>
+                                <td>
+                                    <form method="POST" action="{{ route('settings.enterprise.backups.verify', $backup->id) }}">
+                                        @csrf
+                                        <button class="button secondary inline" type="submit">Verify Again</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6">Belum ada backup perusahaan.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </section>
     </main>
 </div>

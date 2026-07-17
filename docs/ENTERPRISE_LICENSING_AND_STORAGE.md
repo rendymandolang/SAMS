@@ -42,9 +42,16 @@ Private attachments and supplier catalog uploads use the company storage profile
 
 Each company receives an isolated root prefix in the form `companies/{company_id}`. Supplier catalogs stored in cloud storage are streamed to a temporary private file for scanning and removed immediately afterward. Existing document rows retain their disk and path; a controlled provider-migration workflow is still required before replacing credentials for a cloud profile that already contains files.
 
+The Enterprise page displays usage warnings at 70%, 85%, and 95% of the configured quota.
+
+## Encrypted backups
+
+An authorized company administrator can create a tenant-scoped structured backup on the company's active storage. SuperSoft encrypts the payload before writing it, records a SHA-256 checksum, and immediately verifies decryption, company identity, checksum, and backup structure. Verification can be repeated from the Enterprise page.
+
+Production installations should set `SUPERSOFT_BACKUP_ENCRYPTION_KEY` to a separately protected base64 key. If it is empty, the application key is used. The recovery key must be stored outside the application server; losing both the server and key makes encrypted backups unrecoverable.
+
 ## Remaining implementation stages
 
-- Add encrypted backup destinations and restore testing.
-- Add quota warnings at 70%, 85%, and 95%.
+- Add a controlled restore executor with dry-run conflict reporting and explicit approval.
 - Add managed-cloud metering and invoice calculation.
 - Add a controlled migration workflow between storage providers.

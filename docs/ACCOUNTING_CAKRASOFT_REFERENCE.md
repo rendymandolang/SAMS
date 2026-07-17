@@ -15,10 +15,19 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 ## SAMS Improvements
 
 - Web-first responsive interface with company isolation and role permissions.
-- Immutable posted journal direction; changes will use controlled reversal instead of deleting ledger history.
+- Immutable posted journal direction with controlled, single-use reversal instead of deleting ledger history.
 - Explicit audit events for create and post.
 - Server-side double-entry validation and accounting period lock.
 - A4 Journal Voucher print with company identity, clear totals, and Prepared/Checked/Approved blocks.
 - Future AP entries will connect approved procurement and Goods Receipt without duplicate posting.
+
+## Implemented SaS controls
+
+- Company-owned COA with duplicate-code prevention and similar-name warning.
+- Posting accounts must be active detail accounts; header accounts cannot receive journal lines.
+- Each journal line must use exactly one side: debit or credit.
+- Collision-resistant monthly Journal Voucher numbering under a database lock.
+- Posted journals can be reversed once. SaS creates and posts an opposite Journal Voucher, links both records, keeps original lines unchanged, and records the reason in the audit trail.
+- Reversal dates cannot precede the original journal and must fall in an open accounting period.
 
 The Cakrasoft source is used as workflow and report reference. SAMS does not copy its branding, proprietary assets, or desktop interface.

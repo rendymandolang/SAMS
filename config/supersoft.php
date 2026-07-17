@@ -5,6 +5,7 @@ return [
     'company_name' => env('SUPERSOFT_COMPANY_NAME', 'PT Supersoft Global Investama'),
     'domain' => env('SUPERSOFT_DOMAIN', 'supersoft.id'),
     'version' => env('SUPERSOFT_VERSION', '1.0.1'),
+    'backup_encryption_key' => env('SUPERSOFT_BACKUP_ENCRYPTION_KEY'),
     'developer' => 'Rendy Mandolang, SE., MM., CPA., CHCGM.',
     'contact' => [
         'primary' => 'hello@supersoft.id',

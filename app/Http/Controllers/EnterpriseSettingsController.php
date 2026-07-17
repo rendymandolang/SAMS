@@ -16,7 +16,7 @@ use Throwable;
 
 class EnterpriseSettingsController extends Controller
 {
-    public function index(CompanyContext $companyContext): View
+    public function index(CompanyContext $companyContext, CompanyStorageManager $storageManager): View
     {
         $company = $companyContext->current();
         $this->ensureRecords((int) $company->id);
@@ -25,6 +25,14 @@ class EnterpriseSettingsController extends Controller
             'company' => $company,
             'subscription' => DB::table('company_subscriptions')->where('company_id', $company->id)->first(),
             'storage' => DB::table('company_storage_profiles')->where('company_id', $company->id)->first(),
+            'storageUsage' => $storageManager->usage((int) $company->id),
+            'backups' => DB::table('company_backups')
+                ->leftJoin('users', 'users.id', '=', 'company_backups.created_by')
+                ->where('company_backups.company_id', $company->id)
+                ->select('company_backups.*', 'users.name as creator_name')
+                ->orderByDesc('company_backups.id')
+                ->limit(10)
+                ->get(),
             'modules' => DB::table('modules')
                 ->join('company_modules', 'company_modules.module_id', '=', 'modules.id')
                 ->where('company_modules.company_id', $company->id)

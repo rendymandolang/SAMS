@@ -13,6 +13,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BudgetControlController;
+use App\Http\Controllers\CompanyBackupController;
 use App\Http\Controllers\CompanyContextController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DashboardController;
@@ -36,7 +37,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Middleware\FilterBlankJournalLines;
 use Illuminate\Support\Facades\Route;
 
-foreach (['role', 'user', 'attachment', 'id', 'purchaseRequest', 'purchaseOrder', 'goodsReceipt', 'goodsReceiptItem', 'asset', 'maintenance', 'stockOpname', 'journal'] as $numericParameter) {
+foreach (['role', 'user', 'attachment', 'backup', 'id', 'purchaseRequest', 'purchaseOrder', 'goodsReceipt', 'goodsReceiptItem', 'asset', 'maintenance', 'stockOpname', 'journal'] as $numericParameter) {
     Route::pattern($numericParameter, '[0-9]+');
 }
 
@@ -71,6 +72,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings/enterprise', [EnterpriseSettingsController::class, 'index'])->name('settings.enterprise');
         Route::put('/settings/enterprise/storage', [EnterpriseSettingsController::class, 'updateStorage'])->name('settings.enterprise.storage.update');
         Route::post('/settings/enterprise/storage/test', [EnterpriseSettingsController::class, 'testStorage'])->name('settings.enterprise.storage.test');
+        Route::post('/settings/enterprise/backups', [CompanyBackupController::class, 'store'])->name('settings.enterprise.backups.store');
+        Route::post('/settings/enterprise/backups/{backup}/verify', [CompanyBackupController::class, 'verify'])->name('settings.enterprise.backups.verify');
     });
     Route::middleware(['module:core', 'permission:core.access.manage'])->group(function () {
         Route::get('/settings/access-control', [AccessControlController::class, 'index'])->name('access-control.index');
@@ -103,6 +106,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/journals', [AccountingController::class, 'store'])->middleware(FilterBlankJournalLines::class)->name('accounting.store');
     });
     Route::post('/accounting/journals/{journal}/post', [AccountingController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.post');
+    Route::post('/accounting/journals/{journal}/reverse', [AccountingController::class, 'reverse'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.reverse');
     Route::middleware(['module:accounting', 'permission:accounting.post'])->group(function () {
         Route::get('/accounting/close-month', [AccountingCloseController::class, 'index'])->name('accounting.close-month');
         Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');

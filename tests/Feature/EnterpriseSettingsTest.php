@@ -7,6 +7,7 @@ use App\Support\CompanyStorageManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
@@ -154,6 +155,64 @@ class EnterpriseSettingsTest extends TestCase
         $this->assertSame('failed', $profile->status);
         $this->assertStringNotContainsString('127.0.0.1', (string) $profile->last_test_message);
         $this->assertStringNotContainsString('private-secret', (string) $profile->last_test_message);
+    }
+
+    public function test_company_backup_is_encrypted_stored_and_verified(): void
+    {
+        Storage::fake('local');
+        $this->seed();
+        $admin = User::where('email', 'admin@sams.local')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post('/settings/enterprise/backups')
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Backup terenkripsi berhasil dibuat dan diverifikasi.');
+
+        $backup = DB::table('company_backups')->firstOrFail();
+        Storage::disk('local')->assertExists($backup->path);
+        $contents = Storage::disk('local')->get($backup->path);
+        $this->assertStringNotContainsString('SAMS Demo Company', $contents);
+        $this->assertSame('verified', $backup->status);
+        $this->assertSame('passed', $backup->verification_status);
+        $this->assertNotNull($backup->verified_at);
+        $this->assertSame((int) $backup->size_bytes, (int) DB::table('company_storage_profiles')->value('used_bytes'));
+        $this->assertDatabaseHas('audit_logs', ['event' => 'company_backup_created', 'auditable_id' => $backup->id]);
+
+        $this->actingAs($admin)
+            ->post('/settings/enterprise/backups/'.$backup->id.'/verify')
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertDatabaseHas('audit_logs', ['event' => 'company_backup_verified', 'auditable_id' => $backup->id]);
+
+        Storage::disk('local')->put($backup->path, 'tampered-backup');
+        $this->actingAs($admin)
+            ->post('/settings/enterprise/backups/'.$backup->id.'/verify')
+            ->assertRedirect()
+            ->assertSessionHas('warning');
+        $this->assertDatabaseHas('company_backups', [
+            'id' => $backup->id,
+            'status' => 'verification_failed',
+            'verification_status' => 'failed',
+        ]);
+    }
+
+    public function test_storage_usage_reports_warning_thresholds(): void
+    {
+        $this->seed();
+        $profile = DB::table('company_storage_profiles')->firstOrFail();
+        DB::table('company_storage_profiles')->where('id', $profile->id)->update([
+            'quota_bytes' => 100,
+            'used_bytes' => 85,
+        ]);
+
+        $usage = app(CompanyStorageManager::class)->usage((int) $profile->company_id);
+
+        $this->assertSame(85.0, $usage['percentage']);
+        $this->assertSame('high', $usage['level']);
+        $this->actingAs(User::where('email', 'admin@sams.local')->firstOrFail())
+            ->get('/settings/enterprise')
+            ->assertOk()
+            ->assertSee('Storage telah menggunakan 85,00%');
     }
 
     public function test_company_cannot_activate_an_unlicensed_module(): void

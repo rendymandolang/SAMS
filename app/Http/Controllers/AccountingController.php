@@ -79,14 +79,25 @@ class AccountingController extends Controller
     public function store(Request $r, CompanyContext $c): RedirectResponse
     {
         $v = $r->validate(['journal_date' => ['required', 'date'], 'memo' => ['required', 'string', 'max:2000'], 'is_adjustment' => ['nullable', 'boolean'], 'lines' => ['required', 'array', 'min:2'], 'lines.*.gl_account_id' => ['required', 'integer'], 'lines.*.department_id' => ['nullable', 'integer'], 'lines.*.description' => ['nullable', 'string', 'max:1000'], 'lines.*.debit' => ['nullable', 'numeric', 'min:0'], 'lines.*.credit' => ['nullable', 'numeric', 'min:0']]);
-        $accounts = DB::table('gl_accounts')->where('company_id', $c->id())->whereIn('id', collect($v['lines'])->pluck('gl_account_id'))->pluck('id');
+        $accounts = DB::table('gl_accounts')->where('company_id', $c->id())->where('is_active', true)->where('allow_posting', true)->whereIn('id', collect($v['lines'])->pluck('gl_account_id'))->pluck('id');
         abort_unless($accounts->count() === collect($v['lines'])->pluck('gl_account_id')->unique()->count(), 422);
+        $departmentIds = collect($v['lines'])->pluck('department_id')->filter()->unique();
+        abort_unless($departmentIds->isEmpty() || DB::table('departments')->where('company_id', $c->id())->whereIn('id', $departmentIds)->count() === $departmentIds->count(), 422);
+
+        foreach ($v['lines'] as $line) {
+            $lineDebit = (float) ($line['debit'] ?? 0);
+            $lineCredit = (float) ($line['credit'] ?? 0);
+            if (($lineDebit <= 0 && $lineCredit <= 0) || ($lineDebit > 0 && $lineCredit > 0)) {
+                throw ValidationException::withMessages(['lines' => 'Setiap baris wajib memiliki nilai hanya pada debit atau kredit.']);
+            }
+        }
+
         $debit = collect($v['lines'])->sum(fn ($x) => (float) ($x['debit'] ?? 0));
         $credit = collect($v['lines'])->sum(fn ($x) => (float) ($x['credit'] ?? 0));
         if ($debit <= 0 || abs($debit - $credit) > .005) {
             throw ValidationException::withMessages(['lines' => 'Total debit dan kredit wajib sama dan lebih dari nol.']);
         }$id = DB::transaction(function () use ($v, $c, $debit, $credit, $r) {
-            $number = 'JV-'.date('Ym', strtotime($v['journal_date'])).'-'.str_pad((string) (DB::table('journal_entries')->where('company_id', $c->id())->count() + 1), 5, '0', STR_PAD_LEFT);
+            $number = $this->nextJournalNumber($c->id(), $v['journal_date']);
             $id = DB::table('journal_entries')->insertGetId(['company_id' => $c->id(), 'branch_id' => $c->branch()?->id, 'document_number' => $number, 'journal_date' => $v['journal_date'], 'memo' => $v['memo'], 'is_adjustment' => $r->boolean('is_adjustment'), 'total_debit' => $debit, 'total_credit' => $credit, 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now()]);
             foreach ($v['lines'] as $i => $line) {
                 DB::table('journal_entry_lines')->insert(['journal_entry_id' => $id, 'gl_account_id' => $line['gl_account_id'], 'department_id' => $line['department_id'] ?? null, 'description' => $line['description'] ?? null, 'debit' => $line['debit'] ?? 0, 'credit' => $line['credit'] ?? 0, 'line_number' => $i + 1, 'created_at' => now(), 'updated_at' => now()]);
@@ -123,6 +134,80 @@ class AccountingController extends Controller
         return back()->with('status', 'Journal Voucher berhasil diposting ke General Ledger.');
     }
 
+    public function reverse(Request $request, int $journal, CompanyContext $companyContext): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reversal_date' => ['required', 'date'],
+            'reversal_reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+        $companyId = $companyContext->id();
+        TransactionPeriodLock::ensureOpen($companyId, 'accounting', $validated['reversal_date']);
+
+        $reversalId = DB::transaction(function () use ($companyId, $journal, $validated, $companyContext): int {
+            $original = DB::table('journal_entries')
+                ->where('company_id', $companyId)
+                ->where('id', $journal)
+                ->lockForUpdate()
+                ->first();
+            abort_unless($original, 404);
+            abort_if($original->status !== 'posted', 422, 'Hanya jurnal posted yang dapat direversal.');
+            abort_if($original->reversed_by_id !== null || $original->reversal_of_id !== null, 422, 'Jurnal ini sudah merupakan atau memiliki reversal.');
+            abort_if($validated['reversal_date'] < $original->journal_date, 422, 'Tanggal reversal tidak boleh lebih awal dari jurnal asli.');
+
+            $lines = DB::table('journal_entry_lines')->where('journal_entry_id', $original->id)->orderBy('line_number')->get();
+            abort_if($lines->isEmpty(), 422, 'Detail jurnal asli tidak ditemukan.');
+
+            $reversalId = DB::table('journal_entries')->insertGetId([
+                'company_id' => $companyId,
+                'branch_id' => $original->branch_id ?: $companyContext->branch()?->id,
+                'document_number' => $this->nextJournalNumber($companyId, $validated['reversal_date']),
+                'journal_date' => $validated['reversal_date'],
+                'source_type' => 'reversal',
+                'reversal_of_id' => $original->id,
+                'status' => 'posted',
+                'is_adjustment' => true,
+                'reversal_reason' => $validated['reversal_reason'],
+                'memo' => 'Reversal '.$original->document_number.' — '.$validated['reversal_reason'],
+                'total_debit' => $original->total_credit,
+                'total_credit' => $original->total_debit,
+                'created_by' => auth()->id(),
+                'posted_by' => auth()->id(),
+                'posted_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            foreach ($lines as $line) {
+                DB::table('journal_entry_lines')->insert([
+                    'journal_entry_id' => $reversalId,
+                    'gl_account_id' => $line->gl_account_id,
+                    'department_id' => $line->department_id,
+                    'description' => 'Reversal: '.($line->description ?: $original->memo),
+                    'debit' => $line->credit,
+                    'credit' => $line->debit,
+                    'line_number' => $line->line_number,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::table('journal_entries')->where('id', $original->id)->update([
+                'reversed_by_id' => $reversalId,
+                'updated_at' => now(),
+            ]);
+
+            return $reversalId;
+        });
+
+        AuditLogger::log('journal_reversed', 'journal_entry', $journal, null, [
+            'reversal_id' => $reversalId,
+            'reversal_date' => $validated['reversal_date'],
+            'reason' => $validated['reversal_reason'],
+        ], $companyId);
+
+        return redirect()->route('accounting.show', $reversalId)->with('status', 'Reversal berhasil dibuat dan diposting. Jurnal asli tetap tersimpan untuk audit.');
+    }
+
     private function display(int $id, CompanyContext $c, string $view): View
     {
         $e = DB::table('journal_entries')->leftJoin('users as creator', 'creator.id', '=', 'journal_entries.created_by')->leftJoin('users as poster', 'poster.id', '=', 'journal_entries.posted_by')->where('journal_entries.company_id', $c->id())->where('journal_entries.id', $id)->select('journal_entries.*', 'creator.name as creator_name', 'poster.name as poster_name')->first();
@@ -151,5 +236,35 @@ class AccountingController extends Controller
     private function normalizeAccountName(string $name): string
     {
         return preg_replace('/[^a-z0-9]+/', '', Str::lower(Str::ascii($name))) ?? '';
+    }
+
+    private function nextJournalNumber(int $companyId, string $journalDate): string
+    {
+        $period = date('Ym', strtotime($journalDate));
+        $lastDocumentNumber = DB::table('journal_entries')
+            ->where('company_id', $companyId)
+            ->where('document_number', 'like', 'JV-'.$period.'-%')
+            ->max('document_number');
+        $initialNumber = $lastDocumentNumber
+            ? max(1, (int) Str::afterLast((string) $lastDocumentNumber, '-') + 1)
+            : 1;
+        DB::table('accounting_document_sequences')->insertOrIgnore([
+            'company_id' => $companyId,
+            'period' => $period,
+            'next_number' => $initialNumber,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $sequence = DB::table('accounting_document_sequences')
+            ->where('company_id', $companyId)
+            ->where('period', $period)
+            ->lockForUpdate()
+            ->firstOrFail();
+        DB::table('accounting_document_sequences')->where('id', $sequence->id)->update([
+            'next_number' => (int) $sequence->next_number + 1,
+            'updated_at' => now(),
+        ]);
+
+        return 'JV-'.$period.'-'.str_pad((string) $sequence->next_number, 5, '0', STR_PAD_LEFT);
     }
 }
