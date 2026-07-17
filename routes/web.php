@@ -25,6 +25,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataConnectionController;
 use App\Http\Controllers\EnterpriseSettingsController;
 use App\Http\Controllers\GoodsReceiptController;
+use App\Http\Controllers\HrisController;
 use App\Http\Controllers\InventoryMovementReportController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MasterDataController;
@@ -154,6 +155,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');
         Route::delete('/accounting/close-month/{lock}', [AccountingCloseController::class, 'destroy'])->name('accounting.close-month.destroy');
     });
+    Route::middleware(['module:hris', 'permission:hris.view'])->group(function () {
+        Route::get('/hris', [HrisController::class, 'index'])->name('hris.index');
+        Route::get('/hris/employees/{employee}', [HrisController::class, 'show'])->name('hris.employees.show');
+    });
+    Route::middleware(['module:hris', 'permission:hris.manage'])->group(function () {
+        Route::post('/hris/positions', [HrisController::class, 'storePosition'])->name('hris.positions.store');
+        Route::post('/hris/employees', [HrisController::class, 'storeEmployee'])->name('hris.employees.store');
+        Route::patch('/hris/employees/{employee}', [HrisController::class, 'updateEmployee'])->name('hris.employees.update');
+        Route::post('/hris/leave-types', [HrisController::class, 'storeLeaveType'])->name('hris.leave-types.store');
+        Route::post('/hris/employees/{employee}/documents', [HrisController::class, 'uploadDocument'])->name('hris.documents.store');
+    });
+    Route::post('/hris/leave-requests', [HrisController::class, 'requestLeave'])->middleware(['module:hris', 'permission:hris.leave.self'])->name('hris.leave-requests.store');
+    Route::post('/hris/leave-requests/{leaveRequest}/decision', [HrisController::class, 'decideLeave'])->middleware(['module:hris', 'permission:hris.leave.approve'])->name('hris.leave-requests.decision');
+    Route::post('/hris/leave-requests/{leaveRequest}/cancel', [HrisController::class, 'cancelLeave'])->middleware(['module:hris', 'permission:hris.leave.self'])->name('hris.leave-requests.cancel');
+    Route::get('/hris/documents/{document}/download', [HrisController::class, 'downloadDocument'])->middleware(['module:hris', 'permission:hris.sensitive.view'])->name('hris.documents.download');
     Route::post('/ai-insights/generate', [AiInsightController::class, 'generate'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.generate');
     Route::post('/ai-insights/query', [AiInsightController::class, 'query'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.query');
     Route::post('/ai-insights/narrative', [AiInsightController::class, 'narrative'])->middleware(['module:intelligence', 'permission:intelligence.generate'])->name('ai-insights.narrative');

@@ -26,6 +26,7 @@ class CompanyBackupService
         'accounting_bank_accounts', 'bank_statement_imports', 'bank_reconciliations',
         'accounting_settings', 'accounting_tax_codes', 'accounting_posting_rules',
         'accounting_credit_notes', 'fiscal_year_closes',
+        'hr_positions', 'hr_employees', 'hr_leave_types', 'hr_leave_requests', 'hr_employee_documents',
         'company_storage_profiles',
     ];
 
@@ -162,6 +163,7 @@ class CompanyBackupService
         $this->addChildren($tables, 'ar_invoice_lines', 'ar_invoice_id', 'ar_invoices');
         $this->addChildren($tables, 'ar_receipt_allocations', 'ar_receipt_id', 'ar_receipts');
         $this->addChildren($tables, 'bank_statement_lines', 'bank_statement_import_id', 'bank_statement_imports');
+        $this->addChildren($tables, 'hr_leave_balances', 'employee_id', 'hr_employees');
 
         ksort($tables);
 

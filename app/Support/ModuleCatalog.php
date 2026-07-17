@@ -17,7 +17,7 @@ final class ModuleCatalog
             'accounting' => ['name' => 'SaS — Super Accounting System', 'description' => 'General ledger, journals, AP, cash, bank, tax, and closing.', 'status' => 'active', 'sort_order' => 70],
             'pos' => ['name' => 'SPoS — Super Point of Sale', 'description' => 'Outlet, cashier, order, payment, shift, and sales control.', 'status' => 'planned', 'sort_order' => 80],
             'hotel' => ['name' => 'SHMS — Super Hotel Management System', 'description' => 'Reservation, front office, rooms, folio, housekeeping, and night audit.', 'status' => 'planned', 'sort_order' => 90],
-            'hris' => ['name' => 'SHRiS — Super Human Resource Information System', 'description' => 'Employee records, attendance, leave, payroll, and workforce controls.', 'status' => 'planned', 'sort_order' => 100],
+            'hris' => ['name' => 'SHRiS — Super Human Resource Information System', 'description' => 'Employee records, attendance, leave, payroll, and workforce controls.', 'status' => 'active', 'sort_order' => 100],
             'mobile' => ['name' => 'Mobile Operations', 'description' => 'Approval, QR asset, stock count, and maintenance mobile tools.', 'status' => 'planned', 'sort_order' => 110],
             'intelligence' => ['name' => 'Super Intelligence', 'description' => 'AI-assisted analytics, anomaly detection, forecast, and narratives.', 'status' => 'active', 'sort_order' => 120],
         ];
@@ -65,6 +65,12 @@ final class ModuleCatalog
             'accounting.manage' => self::permission('accounting', 'Create accounts and journal vouchers', 20),
             'accounting.post' => self::permission('accounting', 'Post journal vouchers', 30),
 
+            'hris.view' => self::permission('hris', 'View workforce directory and HR dashboard', 10),
+            'hris.manage' => self::permission('hris', 'Manage organization and employee lifecycle', 20),
+            'hris.leave.self' => self::permission('hris', 'Submit and manage own leave requests', 30),
+            'hris.leave.approve' => self::permission('hris', 'Approve or reject employee leave', 40),
+            'hris.sensitive.view' => self::permission('hris', 'View sensitive employee data and documents', 50),
+
             'intelligence.view' => self::permission('intelligence', 'View AI operational insights', 10),
             'intelligence.generate' => self::permission('intelligence', 'Generate AI operational insights', 20),
         ];
@@ -78,6 +84,7 @@ final class ModuleCatalog
             'purchasing' => ['name' => 'Purchasing', 'description' => 'Procurement operations, supplier control, assets, and reports.'],
             'warehouse' => ['name' => 'Warehouse', 'description' => 'Receiving, inventory, stock count, assets, and maintenance.'],
             'finance' => ['name' => 'Finance', 'description' => 'Approvals, budget controls, and management reporting.'],
+            'hr' => ['name' => 'Human Resources', 'description' => 'Employee lifecycle, leave administration, sensitive records, and workforce controls.'],
             'staff' => ['name' => 'Staff', 'description' => 'Operational request creation and read-only access.'],
         ];
     }
@@ -115,11 +122,16 @@ final class ModuleCatalog
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
                 'accounting.view', 'accounting.manage', 'accounting.post',
             ],
+            'hr' => [
+                'core.dashboard.view', 'core.master.view', 'core.attachments.manage', 'core.audit.view',
+                'reporting.view', 'hris.view', 'hris.manage', 'hris.leave.self', 'hris.leave.approve', 'hris.sensitive.view',
+            ],
             'staff' => [
                 'core.dashboard.view', 'core.master.view', 'core.attachments.manage',
                 'procurement.pr.view', 'procurement.pr.manage', 'procurement.po.view',
                 'inventory.gr.view', 'inventory.stock.view',
                 'assets.register.view', 'assets.maintenance.view', 'reporting.view',
+                'hris.view', 'hris.leave.self',
             ],
         ];
     }

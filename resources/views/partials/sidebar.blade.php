@@ -28,6 +28,7 @@
     $canReporting = $canReportCenter || $canInventoryReport || $canAssetReport || $canProcurementReport;
     $canIntelligence = $user->canAccessModule('intelligence') && $user->hasPermission('intelligence.view');
     $canAccounting = $user->canAccessModule('accounting') && $user->hasPermission('accounting.view');
+    $canHris = $user->canAccessModule('hris') && $user->hasPermission('hris.view');
     $canMaster = $user->hasPermission('core.master.view');
     $canApprovalCenter = $user->canAccessModule('procurement') && $user->hasPermission('core.approvals.view') && ($user->hasPermission('procurement.pr.approve') || $user->hasPermission('procurement.po.approve'));
     $canAdministration = $canApprovalCenter || $user->hasPermission('core.users.manage') || $user->hasPermission('core.audit.view') || $user->hasPermission('core.settings.manage') || $user->hasPermission('core.access.manage');
@@ -76,6 +77,12 @@
                 <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','balance-sheet') }}"><span>Balance Sheet</span></a>
                 @if($user->hasPermission('accounting.post'))<a class="nav-link {{ request()->routeIs('accounting.close-month*')?'active':'' }}" href="{{ route('accounting.close-month') }}"><span>Close Month</span></a>@endif
+            @endif
+            @if ($canHris)
+                <a class="nav-link {{ request()->routeIs('hris.*') ? 'active' : '' }}" href="{{ route('hris.index') }}">
+                    <x-icon class="nav-icon" name="users" />
+                    <span>SHRiS · Human Resources</span>
+                </a>
             @endif
         </div>
 
