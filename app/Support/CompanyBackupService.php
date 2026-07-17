@@ -20,7 +20,8 @@ class CompanyBackupService
         'asset_maintenances', 'roles', 'company_modules', 'company_user_roles',
         'transaction_period_locks', 'ai_insight_runs', 'ai_company_settings',
         'ai_interactions', 'supplier_catalogs', 'supplier_comparison_runs',
-        'data_connections', 'gl_accounts', 'journal_entries', 'accounting_document_sequences', 'company_subscriptions',
+        'data_connections', 'gl_accounts', 'journal_entries', 'accounting_document_sequences',
+        'accounting_subledger_sequences', 'ap_invoices', 'ap_payments', 'company_subscriptions',
         'company_storage_profiles',
     ];
 
@@ -152,6 +153,8 @@ class CompanyBackupService
         $this->addChildren($tables, 'role_permissions', 'role_id', 'roles');
         $this->addChildren($tables, 'supplier_catalog_items', 'supplier_catalog_id', 'supplier_catalogs');
         $this->addChildren($tables, 'journal_entry_lines', 'journal_entry_id', 'journal_entries');
+        $this->addChildren($tables, 'ap_invoice_lines', 'ap_invoice_id', 'ap_invoices');
+        $this->addChildren($tables, 'ap_payment_allocations', 'ap_payment_id', 'ap_payments');
 
         ksort($tables);
 

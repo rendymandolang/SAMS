@@ -19,7 +19,7 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Explicit audit events for create and post.
 - Server-side double-entry validation and accounting period lock.
 - A4 Journal Voucher print with company identity, clear totals, and Prepared/Checked/Approved blocks.
-- Future AP entries will connect approved procurement and Goods Receipt without duplicate posting.
+- Supplier invoice and payment entries post through the SaS subledger. Direct PO/GR accrual matching remains a controlled next stage.
 
 ## Implemented SaS controls
 
@@ -29,5 +29,9 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Collision-resistant monthly Journal Voucher numbering under a database lock.
 - Posted journals can be reversed once. SaS creates and posts an opposite Journal Voucher, links both records, keeps original lines unchanged, and records the reason in the audit trail.
 - Reversal dates cannot precede the original journal and must fall in an open accounting period.
+- Accounts Payable supports supplier invoice drafts, posting, aging, partial payment, final settlement, payment allocation, and linked General Ledger journals.
+- Supplier invoice posting debits company-selected expense/asset and input-tax accounts, then credits the selected liability account.
+- Supplier payment posting debits Accounts Payable and credits the selected cash/bank account.
+- Subledger journals cannot be reversed directly from General Ledger because that would desynchronize AP balances.
 
 The Cakrasoft source is used as workflow and report reference. SAMS does not copy its branding, proprietary assets, or desktop interface.

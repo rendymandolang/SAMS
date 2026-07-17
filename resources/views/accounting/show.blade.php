@@ -61,7 +61,7 @@
             </div>
         </section>
 
-        @if($entry->status === 'posted' && ! $entry->reversal_of_id && ! $entry->reversed_by_id && auth()->user()->hasPermission('accounting.post'))
+        @if($entry->status === 'posted' && $entry->source_type === 'manual' && ! $entry->reversal_of_id && ! $entry->reversed_by_id && auth()->user()->hasPermission('accounting.post'))
             <section class="card" style="margin-top:18px">
                 <h2>Controlled Reversal</h2>
                 <p class="muted">Jurnal posted tidak diubah atau dihapus. SaS membuat jurnal lawan dan mempertahankan keduanya dalam audit trail.</p>

@@ -66,6 +66,7 @@
             @endif
             @if ($canAccounting)
                 <a class="nav-link {{ request()->routeIs('accounting.index','accounting.show','accounting.create') ? 'active' : '' }}" href="{{ route('accounting.index') }}"><x-icon class="nav-icon" name="reports" /><span>Accounting</span></a>
+                <a class="nav-link {{ request()->routeIs('accounting.payables.*','accounting.payments.*') ? 'active' : '' }}" href="{{ route('accounting.payables.index') }}"><span>Accounts Payable</span></a>
                 <a class="nav-link {{ request('report')==='general-ledger' ? 'active' : '' }}" href="{{ route('accounting.reports.show','general-ledger') }}"><span>General Ledger</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','trial-balance') }}"><span>Trial Balance</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>

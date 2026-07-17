@@ -151,6 +151,7 @@ class AccountingController extends Controller
                 ->first();
             abort_unless($original, 404);
             abort_if($original->status !== 'posted', 422, 'Hanya jurnal posted yang dapat direversal.');
+            abort_if($original->source_type !== 'manual', 422, 'Jurnal subledger harus direversal dari modul asal agar saldo subledger tetap sinkron.');
             abort_if($original->reversed_by_id !== null || $original->reversal_of_id !== null, 422, 'Jurnal ini sudah merupakan atau memiliki reversal.');
             abort_if($validated['reversal_date'] < $original->journal_date, 422, 'Tanggal reversal tidak boleh lebih awal dari jurnal asli.');
 
