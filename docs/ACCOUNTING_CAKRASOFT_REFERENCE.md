@@ -33,5 +33,8 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Supplier invoice posting debits company-selected expense/asset and input-tax accounts, then credits the selected liability account.
 - Supplier payment posting debits Accounts Payable and credits the selected cash/bank account.
 - Subledger journals cannot be reversed directly from General Ledger because that would desynchronize AP balances.
+- Accounts Receivable supports company-owned customer master data, customer invoice posting, aging, partial receipt, final settlement, and receipt allocation history.
+- Customer invoices debit the selected receivable account and credit company-selected revenue plus output-tax accounts.
+- Customer receipts debit cash/bank and credit Accounts Receivable through linked posted journals.
 
 The Cakrasoft source is used as workflow and report reference. SAMS does not copy its branding, proprietary assets, or desktop interface.

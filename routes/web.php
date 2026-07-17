@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountingCloseController;
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AccountingReportController;
 use App\Http\Controllers\AccountsPayableController;
+use App\Http\Controllers\AccountsReceivableController;
 use App\Http\Controllers\AiInsightController;
 use App\Http\Controllers\ApprovalCenterController;
 use App\Http\Controllers\AssetMaintenanceController;
@@ -103,6 +104,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounting/payables', [AccountsPayableController::class, 'index'])->name('accounting.payables.index');
         Route::get('/accounting/payables/{invoice}', [AccountsPayableController::class, 'show'])->name('accounting.payables.show');
         Route::get('/accounting/payables/{invoice}/print', [AccountsPayableController::class, 'print'])->name('accounting.payables.print');
+        Route::get('/accounting/receivables', [AccountsReceivableController::class, 'index'])->name('accounting.receivables.index');
+        Route::get('/accounting/receivables/{invoice}', [AccountsReceivableController::class, 'show'])->name('accounting.receivables.show');
+        Route::get('/accounting/receivables/{invoice}/print', [AccountsReceivableController::class, 'print'])->name('accounting.receivables.print');
     });
     Route::middleware(['module:accounting', 'permission:accounting.manage'])->group(function () {
         Route::post('/accounting/accounts', [AccountingController::class, 'storeAccount'])->name('accounting.accounts.store');
@@ -110,11 +114,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/journals', [AccountingController::class, 'store'])->middleware(FilterBlankJournalLines::class)->name('accounting.store');
         Route::get('/accounting/payables/create', [AccountsPayableController::class, 'create'])->name('accounting.payables.create');
         Route::post('/accounting/payables', [AccountsPayableController::class, 'store'])->name('accounting.payables.store');
+        Route::post('/accounting/customers', [AccountsReceivableController::class, 'storeCustomer'])->name('accounting.customers.store');
+        Route::get('/accounting/receivables/create', [AccountsReceivableController::class, 'create'])->name('accounting.receivables.create');
+        Route::post('/accounting/receivables', [AccountsReceivableController::class, 'store'])->name('accounting.receivables.store');
     });
     Route::post('/accounting/journals/{journal}/post', [AccountingController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.post');
     Route::post('/accounting/journals/{journal}/reverse', [AccountingController::class, 'reverse'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.reverse');
     Route::post('/accounting/payables/{invoice}/post', [AccountsPayableController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.payables.post');
     Route::post('/accounting/payments', [AccountsPayableController::class, 'pay'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.payments.store');
+    Route::post('/accounting/receivables/{invoice}/post', [AccountsReceivableController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.receivables.post');
+    Route::post('/accounting/receipts', [AccountsReceivableController::class, 'receive'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.receipts.store');
     Route::middleware(['module:accounting', 'permission:accounting.post'])->group(function () {
         Route::get('/accounting/close-month', [AccountingCloseController::class, 'index'])->name('accounting.close-month');
         Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');

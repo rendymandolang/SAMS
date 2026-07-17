@@ -32,8 +32,8 @@ class AccountingCoreTest extends TestCase
 
         $this->actingAs($finance)
             ->post('/accounting/accounts', [
-                'code' => '1200-01',
-                'name' => 'Trade Accounts Receivable',
+                'code' => '1250-01',
+                'name' => 'Employee Advances',
                 'type' => 'asset',
                 'normal_balance' => 'debit',
                 'allow_posting' => true,
@@ -41,8 +41,8 @@ class AccountingCoreTest extends TestCase
             ->assertRedirect('/accounting');
 
         $this->assertDatabaseHas('gl_accounts', [
-            'code' => '1200-01',
-            'name' => 'Trade Accounts Receivable',
+            'code' => '1250-01',
+            'name' => 'Employee Advances',
             'type' => 'asset',
             'allow_posting' => true,
         ]);
