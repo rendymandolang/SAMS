@@ -520,7 +520,10 @@ class DatabaseSeeder extends Seeder
         foreach ([
             ['code' => '1100', 'name' => 'Cash and Bank', 'type' => 'asset', 'normal_balance' => 'debit'],
             ['code' => '1200', 'name' => 'Trade Accounts Receivable', 'type' => 'asset', 'normal_balance' => 'debit'],
+            ['code' => '1300', 'name' => 'Input Tax Receivable', 'type' => 'asset', 'normal_balance' => 'debit'],
             ['code' => '2100', 'name' => 'Trade Accounts Payable', 'type' => 'liability', 'normal_balance' => 'credit'],
+            ['code' => '2200', 'name' => 'Tax Payable', 'type' => 'liability', 'normal_balance' => 'credit'],
+            ['code' => '3100', 'name' => 'Retained Earnings', 'type' => 'equity', 'normal_balance' => 'credit'],
             ['code' => '4100', 'name' => 'Operating Revenue', 'type' => 'revenue', 'normal_balance' => 'credit'],
             ['code' => '6100', 'name' => 'Operating Expense', 'type' => 'expense', 'normal_balance' => 'debit'],
         ] as $account) {

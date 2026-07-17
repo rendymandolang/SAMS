@@ -24,6 +24,8 @@ class CompanyBackupService
         'accounting_subledger_sequences', 'ap_invoices', 'ap_payments', 'company_subscriptions',
         'accounting_customers', 'ar_invoices', 'ar_receipts',
         'accounting_bank_accounts', 'bank_statement_imports', 'bank_reconciliations',
+        'accounting_settings', 'accounting_tax_codes', 'accounting_posting_rules',
+        'accounting_credit_notes', 'fiscal_year_closes',
         'company_storage_profiles',
     ];
 

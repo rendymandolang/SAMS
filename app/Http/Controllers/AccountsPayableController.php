@@ -60,6 +60,7 @@ class AccountsPayableController extends Controller
     public function create(CompanyContext $companyContext): View
     {
         $companyId = $companyContext->id();
+        $postingRules = DB::table('accounting_posting_rules')->where('company_id', $companyId)->where('transaction_type', 'ap_invoice')->pluck('gl_account_id', 'account_role');
 
         return view('accounting.payables.create', [
             'company' => $companyContext->current(),
@@ -69,6 +70,11 @@ class AccountsPayableController extends Controller
             'liabilityAccounts' => $this->accounts($companyId, ['liability']),
             'taxAccounts' => $this->accounts($companyId, ['asset', 'expense']),
             'departments' => DB::table('departments')->where('company_id', $companyId)->where('is_active', true)->orderBy('name')->get(),
+            'taxCodes' => DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('type', 'purchase')->where('is_active', true)->orderBy('code')->get(),
+            'withholdingCodes' => DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('type', 'withholding')->where('is_active', true)->orderBy('code')->get(),
+            'postingRules' => $postingRules,
+            'poItems' => DB::table('purchase_order_items')->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')->join('items', 'items.id', '=', 'purchase_order_items.item_id')->where('purchase_orders.company_id', $companyId)->whereIn('purchase_orders.status', ['approved', 'partially_received', 'received'])->select('purchase_order_items.*', 'purchase_orders.document_number as po_number', 'items.name as item_name')->orderByDesc('purchase_orders.order_date')->limit(500)->get(),
+            'receiptItems' => DB::table('goods_receipt_items')->join('goods_receipts', 'goods_receipts.id', '=', 'goods_receipt_items.goods_receipt_id')->join('items', 'items.id', '=', 'goods_receipt_items.item_id')->where('goods_receipts.company_id', $companyId)->where('goods_receipts.status', 'posted')->select('goods_receipt_items.*', 'goods_receipts.document_number as receipt_number', 'goods_receipts.purchase_order_id', 'items.name as item_name')->orderByDesc('goods_receipts.received_at')->limit(500)->get(),
         ]);
     }
 
@@ -91,6 +97,8 @@ class AccountsPayableController extends Controller
             'ap_account_id' => ['required', 'integer'],
             'tax_account_id' => ['nullable', 'integer'],
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_code_id' => ['nullable', 'integer'],
+            'withholding_tax_code_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1', 'max:100'],
             'lines.*.gl_account_id' => ['required', 'integer'],
@@ -98,6 +106,8 @@ class AccountsPayableController extends Controller
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
             'lines.*.unit_price' => ['required', 'numeric', 'gt:0'],
+            'lines.*.purchase_order_item_id' => ['nullable', 'integer'],
+            'lines.*.goods_receipt_item_id' => ['nullable', 'integer'],
         ]);
         $companyId = (int) $company->id;
         $validated['currency'] = strtoupper($validated['currency']);
@@ -112,7 +122,13 @@ class AccountsPayableController extends Controller
             abort_unless(DB::table('purchase_orders')->where('company_id', $companyId)->where('supplier_id', $validated['supplier_id'])->where('id', $validated['purchase_order_id'])->exists(), 422);
         }
         $this->validateAccount($companyId, (int) $validated['ap_account_id'], ['liability'], 'ap_account_id');
-        if ((float) ($validated['tax_amount'] ?? 0) > 0 && empty($validated['tax_account_id'])) {
+        if (! empty($validated['tax_code_id'])) {
+            abort_unless(DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $validated['tax_code_id'])->where('type', 'purchase')->where('is_active', true)->exists(), 422);
+        }
+        if (! empty($validated['withholding_tax_code_id'])) {
+            abort_unless(DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $validated['withholding_tax_code_id'])->where('type', 'withholding')->where('is_active', true)->exists(), 422);
+        }
+        if (empty($validated['tax_code_id']) && (float) ($validated['tax_amount'] ?? 0) > 0 && empty($validated['tax_account_id'])) {
             throw ValidationException::withMessages(['tax_account_id' => 'Tax account wajib dipilih jika tax amount lebih dari nol.']);
         }
         if (! empty($validated['tax_account_id'])) {
@@ -123,6 +139,10 @@ class AccountsPayableController extends Controller
         }
         $departmentIds = collect($validated['lines'])->pluck('department_id')->filter()->unique();
         abort_unless($departmentIds->isEmpty() || DB::table('departments')->where('company_id', $companyId)->whereIn('id', $departmentIds)->count() === $departmentIds->count(), 422);
+        $poItemIds = collect($validated['lines'])->pluck('purchase_order_item_id')->filter()->unique();
+        abort_unless($poItemIds->isEmpty() || DB::table('purchase_order_items')->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')->where('purchase_orders.company_id', $companyId)->whereIn('purchase_order_items.id', $poItemIds)->count() === $poItemIds->count(), 422);
+        $receiptItemIds = collect($validated['lines'])->pluck('goods_receipt_item_id')->filter()->unique();
+        abort_unless($receiptItemIds->isEmpty() || DB::table('goods_receipt_items')->join('goods_receipts', 'goods_receipts.id', '=', 'goods_receipt_items.goods_receipt_id')->where('goods_receipts.company_id', $companyId)->whereIn('goods_receipt_items.id', $receiptItemIds)->count() === $receiptItemIds->count(), 422);
 
         $invoiceId = $service->createInvoice($companyId, $companyContext->branch()?->id, (int) auth()->id(), $validated);
         AuditLogger::log('ap_invoice_created', 'ap_invoice', $invoiceId, null, [

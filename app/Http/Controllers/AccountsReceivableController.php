@@ -51,14 +51,15 @@ class AccountsReceivableController extends Controller
     public function create(CompanyContext $context): View
     {
         $id = $context->id();
+        $postingRules = DB::table('accounting_posting_rules')->where('company_id', $id)->where('transaction_type', 'ar_invoice')->pluck('gl_account_id', 'account_role');
 
-        return view('accounting.receivables.create', ['company' => $context->current(), 'customers' => DB::table('accounting_customers')->where('company_id', $id)->where('is_active', true)->orderBy('name')->get(), 'revenueAccounts' => $this->accounts($id, ['revenue']), 'assetAccounts' => $this->accounts($id, ['asset']), 'taxAccounts' => $this->accounts($id, ['liability']), 'departments' => DB::table('departments')->where('company_id', $id)->where('is_active', true)->orderBy('name')->get()]);
+        return view('accounting.receivables.create', ['company' => $context->current(), 'customers' => DB::table('accounting_customers')->where('company_id', $id)->where('is_active', true)->orderBy('name')->get(), 'revenueAccounts' => $this->accounts($id, ['revenue']), 'assetAccounts' => $this->accounts($id, ['asset']), 'taxAccounts' => $this->accounts($id, ['liability']), 'departments' => DB::table('departments')->where('company_id', $id)->where('is_active', true)->orderBy('name')->get(), 'taxCodes' => DB::table('accounting_tax_codes')->where('company_id', $id)->where('type', 'sales')->where('is_active', true)->orderBy('code')->get(), 'postingRules' => $postingRules]);
     }
 
     public function store(Request $request, CompanyContext $context, AccountsReceivableService $service): RedirectResponse
     {
         $request->merge(['lines' => collect($request->input('lines', []))->filter(fn (array $line): bool => filled($line['gl_account_id'] ?? null) || filled($line['description'] ?? null) || filled($line['unit_price'] ?? null))->values()->all()]);
-        $v = $request->validate(['customer_id' => ['required', 'integer'], 'customer_reference' => ['nullable', 'string', 'max:100'], 'invoice_date' => ['required', 'date'], 'due_date' => ['required', 'date', 'after_or_equal:invoice_date'], 'currency' => ['required', 'string', 'size:3'], 'ar_account_id' => ['required', 'integer'], 'tax_account_id' => ['nullable', 'integer'], 'tax_amount' => ['nullable', 'numeric', 'min:0'], 'notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:100'], 'lines.*.gl_account_id' => ['required', 'integer'], 'lines.*.department_id' => ['nullable', 'integer'], 'lines.*.description' => ['required', 'string', 'max:255'], 'lines.*.quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_price' => ['required', 'numeric', 'gt:0']]);
+        $v = $request->validate(['customer_id' => ['required', 'integer'], 'customer_reference' => ['nullable', 'string', 'max:100'], 'invoice_date' => ['required', 'date'], 'due_date' => ['required', 'date', 'after_or_equal:invoice_date'], 'currency' => ['required', 'string', 'size:3'], 'ar_account_id' => ['required', 'integer'], 'tax_account_id' => ['nullable', 'integer'], 'tax_code_id' => ['nullable', 'integer'], 'tax_amount' => ['nullable', 'numeric', 'min:0'], 'notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:100'], 'lines.*.gl_account_id' => ['required', 'integer'], 'lines.*.department_id' => ['nullable', 'integer'], 'lines.*.description' => ['required', 'string', 'max:255'], 'lines.*.quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_price' => ['required', 'numeric', 'gt:0']]);
         $company = $context->current();
         $companyId = (int) $company->id;
         $v['currency'] = strtoupper($v['currency']);
@@ -67,7 +68,10 @@ class AccountsReceivableController extends Controller
         }
         abort_unless(DB::table('accounting_customers')->where('company_id', $companyId)->where('id', $v['customer_id'])->where('is_active', true)->exists(), 422);
         $this->validateAccount($companyId, (int) $v['ar_account_id'], ['asset'], 'ar_account_id');
-        if ((float) ($v['tax_amount'] ?? 0) > 0 && empty($v['tax_account_id'])) {
+        if (! empty($v['tax_code_id'])) {
+            abort_unless(DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $v['tax_code_id'])->where('type', 'sales')->where('is_active', true)->exists(), 422);
+        }
+        if (empty($v['tax_code_id']) && (float) ($v['tax_amount'] ?? 0) > 0 && empty($v['tax_account_id'])) {
             throw ValidationException::withMessages(['tax_account_id' => 'Output tax account wajib dipilih jika tax amount lebih dari nol.']);
         }
         if (! empty($v['tax_account_id'])) {

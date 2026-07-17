@@ -35,6 +35,9 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Subledger journals cannot be reversed directly from General Ledger because that would desynchronize AP balances.
 - Accounts Receivable supports company-owned customer master data, customer invoice posting, aging, partial receipt, final settlement, and receipt allocation history.
 - Bank reconciliation links each bank account to one GL account, imports duplicate-safe statement files, and locks completed reconciliations with a full audit trail.
+- Tax codes and posting rules remain company-owned so each business can map its own COA without forced templates.
+- PO, posted Goods Receipt, and supplier invoice lines are matched before AP posting using company-controlled tolerances.
+- Credit notes, payment/receipt reversals, and fiscal-year reopen operations always create linked reversal journals instead of deleting ledger history.
 - Customer invoices debit the selected receivable account and credit company-selected revenue plus output-tax accounts.
 - Customer receipts debit cash/bank and credit Accounts Receivable through linked posted journals.
 

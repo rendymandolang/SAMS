@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AccessControlController;
+use App\Http\Controllers\AccountingAdvancedController;
 use App\Http\Controllers\AccountingCloseController;
+use App\Http\Controllers\AccountingConfigurationController;
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AccountingReportController;
 use App\Http\Controllers\AccountsPayableController;
@@ -112,6 +114,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounting/bank-reconciliation/template/csv', [BankReconciliationController::class, 'template'])->name('accounting.bank-reconciliation.template');
         Route::get('/accounting/bank-reconciliation/{reconciliation}', [BankReconciliationController::class, 'show'])->name('accounting.bank-reconciliation.show');
         Route::get('/accounting/bank-reconciliation/{reconciliation}/print', [BankReconciliationController::class, 'print'])->name('accounting.bank-reconciliation.print');
+        Route::get('/accounting/configuration', [AccountingConfigurationController::class, 'index'])->name('accounting.configuration.index');
+        Route::get('/accounting/advanced-controls', [AccountingAdvancedController::class, 'index'])->name('accounting.advanced.index');
     });
     Route::middleware(['module:accounting', 'permission:accounting.manage'])->group(function () {
         Route::post('/accounting/accounts', [AccountingController::class, 'storeAccount'])->name('accounting.accounts.store');
@@ -124,6 +128,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/receivables', [AccountsReceivableController::class, 'store'])->name('accounting.receivables.store');
         Route::post('/accounting/bank-accounts', [BankReconciliationController::class, 'storeBankAccount'])->name('accounting.bank-accounts.store');
         Route::post('/accounting/bank-statements/import', [BankReconciliationController::class, 'import'])->name('accounting.bank-statements.import');
+        Route::post('/accounting/configuration/settings', [AccountingConfigurationController::class, 'storeSettings'])->name('accounting.configuration.settings');
+        Route::post('/accounting/configuration/tax-codes', [AccountingConfigurationController::class, 'storeTaxCode'])->name('accounting.configuration.tax-codes');
+        Route::post('/accounting/configuration/posting-rules', [AccountingConfigurationController::class, 'storePostingRule'])->name('accounting.configuration.posting-rules');
+        Route::post('/accounting/configuration/tax-codes/{taxCode}/toggle', [AccountingConfigurationController::class, 'toggleTaxCode'])->name('accounting.configuration.tax-codes.toggle');
+        Route::post('/accounting/credit-notes', [AccountingAdvancedController::class, 'storeCreditNote'])->name('accounting.credit-notes.store');
     });
     Route::post('/accounting/journals/{journal}/post', [AccountingController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.post');
     Route::post('/accounting/journals/{journal}/reverse', [AccountingController::class, 'reverse'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.reverse');
@@ -135,6 +144,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/accounting/bank-lines/{line}/unmatch', [BankReconciliationController::class, 'unmatch'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.bank-lines.unmatch');
     Route::post('/accounting/bank-lines/{line}/exclude', [BankReconciliationController::class, 'exclude'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.bank-lines.exclude');
     Route::post('/accounting/bank-reconciliation/{reconciliation}/complete', [BankReconciliationController::class, 'complete'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.bank-reconciliation.complete');
+    Route::post('/accounting/credit-notes/{creditNote}/post', [AccountingAdvancedController::class, 'postCreditNote'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.credit-notes.post');
+    Route::post('/accounting/payments/{payment}/reverse', [AccountingAdvancedController::class, 'reversePayment'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.payments.reverse');
+    Route::post('/accounting/receipts/{receipt}/reverse', [AccountingAdvancedController::class, 'reverseReceipt'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.receipts.reverse');
+    Route::post('/accounting/fiscal-close', [AccountingAdvancedController::class, 'closeFiscalYear'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.fiscal-close.store');
+    Route::post('/accounting/fiscal-close/{close}/reopen', [AccountingAdvancedController::class, 'reopenFiscalYear'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.fiscal-close.reopen');
     Route::middleware(['module:accounting', 'permission:accounting.post'])->group(function () {
         Route::get('/accounting/close-month', [AccountingCloseController::class, 'index'])->name('accounting.close-month');
         Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');

@@ -48,7 +48,7 @@ The Enterprise page displays usage warnings at 70%, 85%, and 95% of the configur
 
 An authorized company administrator can create a tenant-scoped structured backup on the company's active storage. SuperSoft encrypts the payload before writing it, records a SHA-256 checksum, and immediately verifies decryption, company identity, checksum, and backup structure. Verification can be repeated from the Enterprise page.
 
-The structured backup includes SaS Accounts Payable, Accounts Receivable, bank reconciliation, transaction allocation, and subledger-sequence data.
+The structured backup includes SaS Accounts Payable, Accounts Receivable, bank reconciliation, tax and posting configuration, credit notes, fiscal closes, transaction allocation, and subledger-sequence data.
 
 Production installations should set `SUPERSOFT_BACKUP_ENCRYPTION_KEY` to a separately protected base64 key. If it is empty, the application key is used. The recovery key must be stored outside the application server; losing both the server and key makes encrypted backups unrecoverable.
 

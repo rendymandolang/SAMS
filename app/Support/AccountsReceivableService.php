@@ -12,7 +12,8 @@ class AccountsReceivableService
     {
         return DB::transaction(function () use ($companyId, $branchId, $userId, $data): int {
             $subtotal = round(collect($data['lines'])->sum(fn (array $line): float => (float) $line['quantity'] * (float) $line['unit_price']), 4);
-            $tax = round((float) ($data['tax_amount'] ?? 0), 4);
+            $taxCode = empty($data['tax_code_id']) ? null : DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $data['tax_code_id'])->where('type', 'sales')->where('is_active', true)->firstOrFail();
+            $tax = $taxCode ? round($subtotal * (float) $taxCode->rate_percent / 100, 4) : round((float) ($data['tax_amount'] ?? 0), 4);
             $total = $subtotal + $tax;
             $invoiceId = DB::table('ar_invoices')->insertGetId([
                 'company_id' => $companyId, 'branch_id' => $branchId, 'customer_id' => $data['customer_id'],
@@ -21,7 +22,7 @@ class AccountsReceivableService
                 'due_date' => $data['due_date'], 'currency' => $data['currency'], 'status' => 'draft',
                 'subtotal' => $subtotal, 'tax_amount' => $tax, 'total_amount' => $total, 'received_amount' => 0,
                 'outstanding_amount' => $total, 'ar_account_id' => $data['ar_account_id'],
-                'tax_account_id' => $data['tax_account_id'] ?? null, 'notes' => $data['notes'] ?? null,
+                'tax_account_id' => $taxCode?->gl_account_id ?? ($data['tax_account_id'] ?? null), 'tax_code_id' => $taxCode?->id, 'notes' => $data['notes'] ?? null,
                 'created_by' => $userId, 'created_at' => now(), 'updated_at' => now(),
             ]);
             foreach ($data['lines'] as $index => $line) {
@@ -139,7 +140,7 @@ class AccountsReceivableService
                 'created_at' => now(), 'updated_at' => now(),
             ]);
             $received = round((float) $invoice->received_amount + $amount, 4);
-            $outstanding = max(0, round((float) $invoice->total_amount - $received, 4));
+            $outstanding = max(0, round((float) $invoice->total_amount - $received - (float) $invoice->credited_amount, 4));
             DB::table('ar_invoices')->where('id', $invoice->id)->update([
                 'received_amount' => $received, 'outstanding_amount' => $outstanding,
                 'status' => $outstanding <= .005 ? 'received' : 'partially_received', 'updated_at' => now(),

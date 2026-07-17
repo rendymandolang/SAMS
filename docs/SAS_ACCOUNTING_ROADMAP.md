@@ -19,12 +19,15 @@
 - Bank account to GL mapping and duplicate-safe CSV statement import.
 - Conservative automatic matching, controlled manual matching, exclusions with audit reasons, and locked completion.
 - Bank reconciliation difference control between statement balance and General Ledger book balance.
+- Company-owned purchase, sales, and withholding tax codes with automatic calculation and linked GL accounts.
+- Configurable posting defaults for AP, AR, cash/bank, revenue, expense, and retained earnings roles.
+- Procurement-to-AP three-way matching with company price and quantity tolerances.
+- AP and AR credit notes that reduce outstanding balances through immutable posted journals.
+- Controlled supplier-payment and customer-receipt reversal with allocation restoration and bank-match protection.
+- Fiscal-year closing to retained earnings, full-year locking, and controlled reopen through reversal journal.
 
-## Next accounting core
+## Accounting core status
 
-1. Tax codes, withholding, and configurable posting rules.
-2. Procurement-to-AP three-way matching from approved PO, Goods Receipt, and supplier invoice.
-3. Credit note and controlled subledger reversal.
-4. Fiscal-year closing and retained earnings workflow.
+The planned SaS accounting core is complete. Future work is product expansion rather than missing accounting foundation: localization packs, electronic tax filing connectors, multi-currency revaluation, consolidated entities, and jurisdiction-specific statutory reports.
 
 Every subledger document must post through balanced Journal Vouchers, remain company-scoped, respect period locks, and use reversal rather than destructive changes after posting.

@@ -69,6 +69,8 @@
                 <a class="nav-link {{ request()->routeIs('accounting.payables.*','accounting.payments.*') ? 'active' : '' }}" href="{{ route('accounting.payables.index') }}"><span>Accounts Payable</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.receivables.*','accounting.receipts.*') ? 'active' : '' }}" href="{{ route('accounting.receivables.index') }}"><span>Accounts Receivable</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.bank-*') ? 'active' : '' }}" href="{{ route('accounting.bank-reconciliation.index') }}"><span>Bank Reconciliation</span></a>
+                <a class="nav-link {{ request()->routeIs('accounting.configuration.*') ? 'active' : '' }}" href="{{ route('accounting.configuration.index') }}"><span>Accounting Setup</span></a>
+                <a class="nav-link {{ request()->routeIs('accounting.advanced.*','accounting.credit-notes.*','accounting.fiscal-close.*') ? 'active' : '' }}" href="{{ route('accounting.advanced.index') }}"><span>Credit & Fiscal Controls</span></a>
                 <a class="nav-link {{ request('report')==='general-ledger' ? 'active' : '' }}" href="{{ route('accounting.reports.show','general-ledger') }}"><span>General Ledger</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','trial-balance') }}"><span>Trial Balance</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>
