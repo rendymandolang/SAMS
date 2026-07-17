@@ -34,6 +34,7 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Supplier payment posting debits Accounts Payable and credits the selected cash/bank account.
 - Subledger journals cannot be reversed directly from General Ledger because that would desynchronize AP balances.
 - Accounts Receivable supports company-owned customer master data, customer invoice posting, aging, partial receipt, final settlement, and receipt allocation history.
+- Bank reconciliation links each bank account to one GL account, imports duplicate-safe statement files, and locks completed reconciliations with a full audit trail.
 - Customer invoices debit the selected receivable account and credit company-selected revenue plus output-tax accounts.
 - Customer receipts debit cash/bank and credit Accounts Receivable through linked posted journals.
 

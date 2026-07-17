@@ -23,6 +23,7 @@ class CompanyBackupService
         'data_connections', 'gl_accounts', 'journal_entries', 'accounting_document_sequences',
         'accounting_subledger_sequences', 'ap_invoices', 'ap_payments', 'company_subscriptions',
         'accounting_customers', 'ar_invoices', 'ar_receipts',
+        'accounting_bank_accounts', 'bank_statement_imports', 'bank_reconciliations',
         'company_storage_profiles',
     ];
 
@@ -158,6 +159,7 @@ class CompanyBackupService
         $this->addChildren($tables, 'ap_payment_allocations', 'ap_payment_id', 'ap_payments');
         $this->addChildren($tables, 'ar_invoice_lines', 'ar_invoice_id', 'ar_invoices');
         $this->addChildren($tables, 'ar_receipt_allocations', 'ar_receipt_id', 'ar_receipts');
+        $this->addChildren($tables, 'bank_statement_lines', 'bank_statement_import_id', 'bank_statement_imports');
 
         ksort($tables);
 

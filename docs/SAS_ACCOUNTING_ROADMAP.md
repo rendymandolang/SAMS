@@ -16,13 +16,15 @@
 - Company customer master, customer invoices, and Accounts Receivable aging.
 - Partial and final customer receipts with allocation history.
 - Automatic balanced journals and professional Customer Invoice print layout.
+- Bank account to GL mapping and duplicate-safe CSV statement import.
+- Conservative automatic matching, controlled manual matching, exclusions with audit reasons, and locked completion.
+- Bank reconciliation difference control between statement balance and General Ledger book balance.
 
 ## Next accounting core
 
-1. Bank reconciliation and statement import.
-2. Tax codes, withholding, and configurable posting rules.
-3. Procurement-to-AP three-way matching from approved PO, Goods Receipt, and supplier invoice.
-4. Credit note and controlled subledger reversal.
-5. Fiscal-year closing and retained earnings workflow.
+1. Tax codes, withholding, and configurable posting rules.
+2. Procurement-to-AP three-way matching from approved PO, Goods Receipt, and supplier invoice.
+3. Credit note and controlled subledger reversal.
+4. Fiscal-year closing and retained earnings workflow.
 
 Every subledger document must post through balanced Journal Vouchers, remain company-scoped, respect period locks, and use reversal rather than destructive changes after posting.
