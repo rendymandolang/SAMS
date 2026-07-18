@@ -7,6 +7,8 @@ use Illuminate\Validation\ValidationException;
 
 class AdvancedAccountingService
 {
+    public function __construct(private readonly AccountingCurrencyService $currencyService) {}
+
     /** @param array<string, mixed> $data */
     public function createCreditNote(int $companyId, ?int $branchId, int $userId, array $data): int
     {
@@ -17,9 +19,20 @@ class AdvancedAccountingService
             if (! $invoice || ! in_array($invoice->status, $isPayable ? ['posted', 'partially_paid'] : ['posted', 'partially_received'], true)) {
                 throw ValidationException::withMessages(['invoice_id' => 'Invoice tidak tersedia untuk credit note.']);
             }
-            $amount = round((float) $data['amount'], 4);
-            if ($amount <= 0 || $amount - (float) $invoice->outstanding_amount > .005) {
+            $foreignAmount = round((float) $data['amount'], 4);
+            if ($foreignAmount <= 0 || $foreignAmount - (float) $invoice->foreign_outstanding_amount > .005) {
                 throw ValidationException::withMessages(['amount' => 'Credit note melebihi outstanding invoice.']);
+            }
+            $rate = $this->currencyService->rate($companyId, $invoice->currency, $data['credit_date']);
+            $carrying = round((float) $invoice->carrying_amount * $foreignAmount / (float) $invoice->foreign_outstanding_amount, 4);
+            $amount = $this->currencyService->toBase($foreignAmount, $rate);
+            $fx = round($amount - $carrying, 4);
+            $settings = DB::table('accounting_settings')->where('company_id', $companyId)->first();
+            $requiredFxAccount = $isPayable
+                ? ($fx > 0 ? $settings?->realized_fx_loss_account_id : $settings?->realized_fx_gain_account_id)
+                : ($fx > 0 ? $settings?->realized_fx_gain_account_id : $settings?->realized_fx_loss_account_id);
+            if (abs($fx) > .005 && ! $requiredFxAccount) {
+                throw ValidationException::withMessages(['currency' => 'Realized FX gain/loss accounts belum dikonfigurasi.']);
             }
             $controlAccountId = $isPayable ? $invoice->ap_account_id : $invoice->ar_account_id;
             $this->assertAccount($companyId, (int) $controlAccountId, [$isPayable ? 'liability' : 'asset']);
@@ -30,7 +43,8 @@ class AdvancedAccountingService
                 'ap_invoice_id' => $isPayable ? $invoice->id : null, 'ar_invoice_id' => $isPayable ? null : $invoice->id,
                 'document_number' => $this->nextNumber($companyId, $isPayable ? 'ap_credit_note' : 'ar_credit_note', $isPayable ? 'APCN' : 'ARCN', $data['credit_date']),
                 'external_reference' => $data['external_reference'] ?? null, 'credit_date' => $data['credit_date'],
-                'currency' => $invoice->currency, 'amount' => $amount, 'control_account_id' => $controlAccountId,
+                'currency' => $invoice->currency, 'exchange_rate' => $rate, 'foreign_amount' => $foreignAmount,
+                'amount' => $amount, 'carrying_amount' => $carrying, 'realized_fx_amount' => $fx, 'control_account_id' => $controlAccountId,
                 'offset_account_id' => $data['offset_account_id'], 'status' => 'draft', 'reason' => $data['reason'],
                 'created_by' => $userId, 'created_at' => now(), 'updated_at' => now(),
             ]);
@@ -47,30 +61,48 @@ class AdvancedAccountingService
             $invoiceTable = $isPayable ? 'ap_invoices' : 'ar_invoices';
             $invoiceId = $isPayable ? $note->ap_invoice_id : $note->ar_invoice_id;
             $invoice = DB::table($invoiceTable)->where('company_id', $companyId)->where('id', $invoiceId)->lockForUpdate()->firstOrFail();
-            if ((float) $note->amount - (float) $invoice->outstanding_amount > .005) {
+            if ((float) $note->foreign_amount - (float) $invoice->foreign_outstanding_amount > .005 || (float) $note->carrying_amount - (float) $invoice->carrying_amount > .005) {
                 throw ValidationException::withMessages(['amount' => 'Outstanding invoice berubah dan tidak lagi mencukupi credit note.']);
             }
+            $settings = DB::table('accounting_settings')->where('company_id', $companyId)->first();
+            $fx = (float) $note->realized_fx_amount;
+            $fxAccountId = $isPayable
+                ? ($fx > 0 ? $settings?->realized_fx_loss_account_id : $settings?->realized_fx_gain_account_id)
+                : ($fx > 0 ? $settings?->realized_fx_gain_account_id : $settings?->realized_fx_loss_account_id);
+            if (abs($fx) > .005 && ! $fxAccountId) {
+                throw ValidationException::withMessages(['currency' => 'Realized FX gain/loss accounts belum dikonfigurasi.']);
+            }
+            $journalTotal = round(max((float) $note->amount, (float) $note->carrying_amount), 4);
             $journalId = DB::table('journal_entries')->insertGetId([
                 'company_id' => $companyId, 'branch_id' => $note->branch_id,
                 'document_number' => $this->nextNumber($companyId, 'credit_note_journal', 'CNJ', $note->credit_date),
                 'journal_date' => $note->credit_date, 'source_type' => $isPayable ? 'ap_credit_note' : 'ar_credit_note',
                 'status' => 'posted', 'memo' => 'Credit Note '.$note->document_number.' · '.$note->reason,
-                'total_debit' => $note->amount, 'total_credit' => $note->amount, 'created_by' => $userId,
+                'total_debit' => $journalTotal, 'total_credit' => $journalTotal, 'created_by' => $userId,
                 'posted_by' => $userId, 'posted_at' => now(), 'created_at' => now(), 'updated_at' => now(),
             ]);
-            DB::table('journal_entry_lines')->insert($isPayable ? [
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $note->control_account_id, 'department_id' => null, 'description' => 'AP credit note', 'debit' => $note->amount, 'credit' => 0, 'line_number' => 1, 'created_at' => now(), 'updated_at' => now()],
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $note->offset_account_id, 'department_id' => null, 'description' => $note->reason, 'debit' => 0, 'credit' => $note->amount, 'line_number' => 2, 'created_at' => now(), 'updated_at' => now()],
+            $common = ['journal_entry_id' => $journalId, 'department_id' => null, 'foreign_currency' => $note->currency, 'exchange_rate' => $note->exchange_rate, 'created_at' => now(), 'updated_at' => now()];
+            $lines = $isPayable ? [
+                $common + ['gl_account_id' => $note->control_account_id, 'description' => 'AP credit note', 'debit' => $note->carrying_amount, 'credit' => 0, 'foreign_debit' => $note->foreign_amount, 'foreign_credit' => 0, 'line_number' => 1],
+                $common + ['gl_account_id' => $note->offset_account_id, 'description' => $note->reason, 'debit' => 0, 'credit' => $note->amount, 'foreign_debit' => 0, 'foreign_credit' => $note->foreign_amount, 'line_number' => 2],
             ] : [
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $note->offset_account_id, 'department_id' => null, 'description' => $note->reason, 'debit' => $note->amount, 'credit' => 0, 'line_number' => 1, 'created_at' => now(), 'updated_at' => now()],
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $note->control_account_id, 'department_id' => null, 'description' => 'AR credit note', 'debit' => 0, 'credit' => $note->amount, 'line_number' => 2, 'created_at' => now(), 'updated_at' => now()],
-            ]);
-            $credited = round((float) $invoice->credited_amount + (float) $note->amount, 4);
-            $outstanding = max(0, round((float) $invoice->total_amount - ($isPayable ? (float) $invoice->paid_amount : (float) $invoice->received_amount) - $credited, 4));
+                $common + ['gl_account_id' => $note->offset_account_id, 'description' => $note->reason, 'debit' => $note->amount, 'credit' => 0, 'foreign_debit' => $note->foreign_amount, 'foreign_credit' => 0, 'line_number' => 1],
+                $common + ['gl_account_id' => $note->control_account_id, 'description' => 'AR credit note', 'debit' => 0, 'credit' => $note->carrying_amount, 'foreign_debit' => 0, 'foreign_credit' => $note->foreign_amount, 'line_number' => 2],
+            ];
+            if (abs($fx) > .005) {
+                $isLoss = $isPayable ? $fx > 0 : $fx < 0;
+                $lines[] = ['journal_entry_id' => $journalId, 'gl_account_id' => $fxAccountId, 'department_id' => null, 'description' => 'Realized FX '.($isLoss ? 'loss' : 'gain'), 'debit' => $isLoss ? abs($fx) : 0, 'credit' => $isLoss ? 0 : abs($fx), 'foreign_currency' => null, 'foreign_debit' => 0, 'foreign_credit' => 0, 'exchange_rate' => null, 'line_number' => 3, 'created_at' => now(), 'updated_at' => now()];
+            }
+            DB::table('journal_entry_lines')->insert($lines);
+            $credited = round((float) $invoice->credited_amount + (float) $note->carrying_amount, 4);
+            $foreignCredited = round((float) $invoice->foreign_credited_amount + (float) $note->foreign_amount, 4);
+            $foreignOutstanding = max(0, round((float) $invoice->foreign_outstanding_amount - (float) $note->foreign_amount, 4));
+            $outstanding = max(0, round((float) $invoice->carrying_amount - (float) $note->carrying_amount, 4));
             $settled = $isPayable ? (float) $invoice->paid_amount : (float) $invoice->received_amount;
             DB::table($invoiceTable)->where('id', $invoice->id)->update([
-                'credited_amount' => $credited, 'outstanding_amount' => $outstanding,
-                'status' => $outstanding <= .005 ? 'credited' : ($settled > 0 ? ($isPayable ? 'partially_paid' : 'partially_received') : 'posted'),
+                'credited_amount' => $credited, 'foreign_credited_amount' => $foreignCredited,
+                'outstanding_amount' => $outstanding, 'foreign_outstanding_amount' => $foreignOutstanding, 'carrying_amount' => $outstanding,
+                'status' => $foreignOutstanding <= .005 ? 'credited' : ($settled > 0 ? ($isPayable ? 'partially_paid' : 'partially_received') : 'posted'),
                 'updated_at' => now(),
             ]);
             DB::table('accounting_credit_notes')->where('id', $note->id)->update(['status' => 'posted', 'journal_entry_id' => $journalId, 'posted_by' => $userId, 'posted_at' => now(), 'updated_at' => now()]);
@@ -194,10 +226,12 @@ class AdvancedAccountingService
                 $invoice = DB::table($invoiceTable)->where('company_id', $companyId)->where('id', $allocation->{$invoiceKey})->lockForUpdate()->firstOrFail();
                 $settledColumn = $isPayable ? 'paid_amount' : 'received_amount';
                 $settled = max(0, round((float) $invoice->{$settledColumn} - (float) $allocation->amount, 4));
-                $outstanding = max(0, round((float) $invoice->total_amount - $settled - (float) $invoice->credited_amount, 4));
+                $foreignOutstanding = round((float) $invoice->foreign_outstanding_amount + (float) $allocation->foreign_amount, 4);
+                $outstanding = round((float) $invoice->carrying_amount + (float) $allocation->amount, 4);
                 DB::table($invoiceTable)->where('id', $invoice->id)->update([
-                    $settledColumn => $settled, 'outstanding_amount' => $outstanding,
-                    'status' => $outstanding <= .005 ? ((float) $invoice->credited_amount > 0 ? 'credited' : ($isPayable ? 'paid' : 'received')) : ($settled > 0 ? ($isPayable ? 'partially_paid' : 'partially_received') : 'posted'),
+                    $settledColumn => $settled, 'outstanding_amount' => $outstanding, 'carrying_amount' => $outstanding,
+                    'foreign_outstanding_amount' => $foreignOutstanding,
+                    'status' => $foreignOutstanding <= .005 ? ((float) $invoice->foreign_credited_amount > 0 ? 'credited' : ($isPayable ? 'paid' : 'received')) : ($settled > 0 ? ($isPayable ? 'partially_paid' : 'partially_received') : 'posted'),
                     'updated_at' => now(),
                 ]);
             }
@@ -223,6 +257,8 @@ class AdvancedAccountingService
             DB::table('journal_entry_lines')->insert([
                 'journal_entry_id' => $reversalId, 'gl_account_id' => $line->gl_account_id, 'department_id' => $line->department_id,
                 'description' => 'Reversal · '.$line->description, 'debit' => $line->credit, 'credit' => $line->debit,
+                'foreign_currency' => $line->foreign_currency, 'foreign_debit' => $line->foreign_credit,
+                'foreign_credit' => $line->foreign_debit, 'exchange_rate' => $line->exchange_rate,
                 'line_number' => $line->line_number, 'created_at' => now(), 'updated_at' => now(),
             ]);
         }

@@ -33,9 +33,13 @@
 - Foreign-currency AP and AR invoices retaining transaction-currency and base-currency values in the subledger and General Ledger.
 - Supplier payments and customer receipts at settlement-date rates with automatic realized FX gain or loss posting.
 - Period-end revaluation of open foreign AP/AR balances with immutable, duplicate-safe unrealized FX journals.
+- Multi-entity consolidation groups restricted to companies accessible by the user.
+- Automatic entity COA mapping with type-conflict protection and presentation-currency translation.
+- Balanced intercompany elimination entries, immutable finalization, and full audit history.
+- Consolidated Trial Balance, period Profit & Loss, Balance Sheet, and entity/elimination drill-down.
 
 ## Accounting core status
 
-The base SaS accounting core, reporting automation, and multi-currency subledger are complete. Current enterprise expansion is focused on consolidated entities, eliminations, localization packs, electronic tax filing connectors, and jurisdiction-specific statutory reports.
+The planned SaS enterprise accounting scope is complete: ledger, AP, AR, bank reconciliation, taxation controls, closing, reporting, automation, multi-currency, FX revaluation, and entity consolidation. Localization packs, electronic tax filing connectors, and jurisdiction-specific statutory forms are optional integrations because their rules and credentials depend on the deployment country and customer.
 
 Every subledger document must post through balanced Journal Vouchers, remain company-scoped, respect period locks, and use reversal rather than destructive changes after posting.

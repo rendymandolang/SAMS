@@ -28,6 +28,7 @@ class CompanyBackupService
         'accounting_credit_notes', 'fiscal_year_closes',
         'accounting_recurring_templates', 'accounting_recurring_runs',
         'accounting_exchange_rates', 'accounting_fx_revaluations',
+        'accounting_consolidation_run_members', 'accounting_consolidation_lines',
         'hr_positions', 'hr_employees', 'hr_leave_types', 'hr_leave_requests', 'hr_employee_documents',
         'company_storage_profiles',
     ];
@@ -145,6 +146,9 @@ class CompanyBackupService
         }
 
         $tables['companies'] = [(array) $company];
+        if (Schema::hasTable('accounting_consolidation_groups')) {
+            $tables['accounting_consolidation_groups'] = DB::table('accounting_consolidation_groups')->where('owner_company_id', $companyId)->orderBy('id')->get()->map(fn (object $row): array => (array) $row)->all();
+        }
         $userIds = collect($tables['company_user'] ?? [])->pluck('user_id');
         $tables['users'] = $userIds->isEmpty() ? [] : DB::table('users')->whereIn('id', $userIds)->orderBy('id')->get()->map(fn (object $row): array => (array) $row)->all();
 
@@ -167,6 +171,11 @@ class CompanyBackupService
         $this->addChildren($tables, 'bank_statement_lines', 'bank_statement_import_id', 'bank_statement_imports');
         $this->addChildren($tables, 'hr_leave_balances', 'employee_id', 'hr_employees');
         $this->addChildren($tables, 'accounting_recurring_template_lines', 'template_id', 'accounting_recurring_templates');
+        $this->addChildren($tables, 'accounting_consolidation_members', 'group_id', 'accounting_consolidation_groups');
+        $this->addChildren($tables, 'accounting_consolidation_mappings', 'group_id', 'accounting_consolidation_groups');
+        $this->addChildren($tables, 'accounting_consolidation_runs', 'group_id', 'accounting_consolidation_groups');
+        $this->addChildren($tables, 'accounting_consolidation_run_members', 'run_id', 'accounting_consolidation_runs');
+        $this->addChildren($tables, 'accounting_consolidation_lines', 'run_id', 'accounting_consolidation_runs');
 
         ksort($tables);
 

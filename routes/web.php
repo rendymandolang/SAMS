@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountingAdvancedController;
 use App\Http\Controllers\AccountingAutomationController;
 use App\Http\Controllers\AccountingCloseController;
 use App\Http\Controllers\AccountingConfigurationController;
+use App\Http\Controllers\AccountingConsolidationController;
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AccountingReportController;
 use App\Http\Controllers\AccountsPayableController;
@@ -158,6 +159,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/accounting/receipts/{receipt}/reverse', [AccountingAdvancedController::class, 'reverseReceipt'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.receipts.reverse');
     Route::post('/accounting/fiscal-close', [AccountingAdvancedController::class, 'closeFiscalYear'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.fiscal-close.store');
     Route::post('/accounting/fiscal-close/{close}/reopen', [AccountingAdvancedController::class, 'reopenFiscalYear'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.fiscal-close.reopen');
+    Route::middleware(['module:accounting', 'permission:accounting.consolidate'])->prefix('accounting/consolidation')->name('accounting.consolidation.')->group(function () {
+        Route::get('/', [AccountingConsolidationController::class, 'index'])->name('index');
+        Route::post('/', [AccountingConsolidationController::class, 'store'])->name('store');
+        Route::get('/{group}', [AccountingConsolidationController::class, 'show'])->name('show');
+        Route::post('/{group}/members', [AccountingConsolidationController::class, 'addMember'])->name('members.store');
+        Route::post('/{group}/runs', [AccountingConsolidationController::class, 'createRun'])->name('runs.store');
+        Route::get('/{group}/runs/{run}', [AccountingConsolidationController::class, 'showRun'])->name('runs.show');
+        Route::post('/{group}/runs/{run}/eliminations', [AccountingConsolidationController::class, 'addElimination'])->name('runs.eliminations.store');
+        Route::post('/{group}/runs/{run}/finalize', [AccountingConsolidationController::class, 'finalize'])->name('runs.finalize');
+    });
     Route::middleware(['module:accounting', 'permission:accounting.post'])->group(function () {
         Route::get('/accounting/close-month', [AccountingCloseController::class, 'index'])->name('accounting.close-month');
         Route::post('/accounting/close-month', [AccountingCloseController::class, 'store'])->name('accounting.close-month.store');

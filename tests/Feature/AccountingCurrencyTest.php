@@ -65,6 +65,36 @@ class AccountingCurrencyTest extends TestCase
         $this->assertSame(200000.0, (float) $payment->realized_fx_amount);
         $this->assertDatabaseHas('journal_entry_lines', ['journal_entry_id' => $payment->journal_entry_id, 'gl_account_id' => $loss->id, 'debit' => 200000]);
         $this->assertDatabaseHas('ap_invoices', ['id' => $invoice->id, 'status' => 'paid', 'foreign_outstanding_amount' => 0]);
+        $this->actingAs($finance)->post('/accounting/payments/'.$payment->id.'/reverse', ['reversal_date' => $paymentDate, 'reason' => 'Foreign payment posted to the wrong bank'])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('ap_invoices', ['id' => $invoice->id, 'status' => 'posted', 'foreign_outstanding_amount' => 200, 'carrying_amount' => 3200000]);
+        $reversalId = DB::table('ap_payments')->where('id', $payment->id)->value('reversal_journal_entry_id');
+        $this->assertDatabaseHas('journal_entry_lines', ['journal_entry_id' => $reversalId, 'foreign_currency' => 'USD', 'foreign_credit' => 200]);
+    }
+
+    public function test_foreign_supplier_credit_note_reduces_foreign_and_carrying_balances_with_realized_fx(): void
+    {
+        $this->seed();
+        $finance = User::where('email', 'finance@sams.local')->firstOrFail();
+        $supplier = DB::table('suppliers')->where('is_active', true)->firstOrFail();
+        $expense = DB::table('gl_accounts')->where('code', '6100')->firstOrFail();
+        $payable = DB::table('gl_accounts')->where('code', '2100')->firstOrFail();
+        $gain = DB::table('gl_accounts')->where('type', 'revenue')->where('allow_posting', true)->firstOrFail();
+        $loss = DB::table('gl_accounts')->where('type', 'expense')->where('allow_posting', true)->firstOrFail();
+        $invoiceDate = today()->toDateString();
+        $creditDate = today()->addDay()->toDateString();
+        $this->actingAs($finance)->post('/accounting/configuration/exchange-rates', ['currency' => 'USD', 'rate_date' => $invoiceDate, 'rate_to_base' => 16000]);
+        $this->actingAs($finance)->post('/accounting/configuration/exchange-rates', ['currency' => 'USD', 'rate_date' => $creditDate, 'rate_to_base' => 17000]);
+        $this->actingAs($finance)->post('/accounting/configuration/fx-accounts', ['realized_fx_gain_account_id' => $gain->id, 'realized_fx_loss_account_id' => $loss->id, 'unrealized_fx_gain_account_id' => $gain->id, 'unrealized_fx_loss_account_id' => $loss->id]);
+        $this->actingAs($finance)->post('/accounting/payables', ['supplier_id' => $supplier->id, 'supplier_invoice_number' => 'FX-CREDIT', 'invoice_date' => $invoiceDate, 'due_date' => today()->addDays(30)->toDateString(), 'currency' => 'USD', 'ap_account_id' => $payable->id, 'lines' => [['gl_account_id' => $expense->id, 'description' => 'Foreign service', 'quantity' => 1, 'unit_price' => 200]]]);
+        $invoice = DB::table('ap_invoices')->where('supplier_invoice_number', 'FX-CREDIT')->firstOrFail();
+        $this->actingAs($finance)->post('/accounting/payables/'.$invoice->id.'/post');
+        $this->actingAs($finance)->post('/accounting/credit-notes', ['type' => 'ap', 'invoice_id' => $invoice->id, 'credit_date' => $creditDate, 'amount' => 50, 'offset_account_id' => $expense->id, 'reason' => 'Supplier foreign currency service credit'])->assertRedirect()->assertSessionHasNoErrors();
+        $note = DB::table('accounting_credit_notes')->where('ap_invoice_id', $invoice->id)->firstOrFail();
+        $this->assertSame(850000.0, (float) $note->amount);
+        $this->assertSame(800000.0, (float) $note->carrying_amount);
+        $this->actingAs($finance)->post('/accounting/credit-notes/'.$note->id.'/post')->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('ap_invoices', ['id' => $invoice->id, 'foreign_outstanding_amount' => 150, 'carrying_amount' => 2400000, 'foreign_credited_amount' => 50]);
+        $this->assertDatabaseHas('journal_entry_lines', ['journal_entry_id' => DB::table('accounting_credit_notes')->where('id', $note->id)->value('journal_entry_id'), 'gl_account_id' => $loss->id, 'debit' => 50000]);
     }
 
     public function test_period_end_revaluation_updates_open_payable_and_posts_unrealized_loss_once(): void

@@ -73,6 +73,7 @@
                 <a class="nav-link {{ request()->routeIs('accounting.configuration.*') ? 'active' : '' }}" href="{{ route('accounting.configuration.index') }}"><span>Accounting Setup</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.advanced.*','accounting.credit-notes.*','accounting.fiscal-close.*') ? 'active' : '' }}" href="{{ route('accounting.advanced.index') }}"><span>Credit & Fiscal Controls</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.automation.*') ? 'active' : '' }}" href="{{ route('accounting.automation.index') }}"><span>Automation & Cash Flow</span></a>
+                @if($user->hasPermission('accounting.consolidate'))<a class="nav-link {{ request()->routeIs('accounting.consolidation.*') ? 'active' : '' }}" href="{{ route('accounting.consolidation.index') }}"><span>Consolidation</span></a>@endif
                 <a class="nav-link {{ request('report')==='general-ledger' ? 'active' : '' }}" href="{{ route('accounting.reports.show','general-ledger') }}"><span>General Ledger</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','trial-balance') }}"><span>Trial Balance</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>

@@ -64,6 +64,7 @@ final class ModuleCatalog
             'accounting.view' => self::permission('accounting', 'View accounting and reports', 10),
             'accounting.manage' => self::permission('accounting', 'Create accounts and journal vouchers', 20),
             'accounting.post' => self::permission('accounting', 'Post journal vouchers', 30),
+            'accounting.consolidate' => self::permission('accounting', 'Manage entity consolidation and eliminations', 40),
 
             'hris.view' => self::permission('hris', 'View workforce directory and HR dashboard', 10),
             'hris.manage' => self::permission('hris', 'Manage organization and employee lifecycle', 20),
@@ -120,7 +121,7 @@ final class ModuleCatalog
                 'intelligence.view', 'intelligence.generate',
                 'assets.register.view', 'assets.maintenance.view',
                 'budgeting.view', 'reporting.view', 'reporting.procurement.view', 'reporting.assets.view',
-                'accounting.view', 'accounting.manage', 'accounting.post',
+                'accounting.view', 'accounting.manage', 'accounting.post', 'accounting.consolidate',
             ],
             'hr' => [
                 'core.dashboard.view', 'core.master.view', 'core.attachments.manage', 'core.audit.view',
