@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AccountingCurrencyService;
 use App\Support\AuditLogger;
 use App\Support\CompanyContext;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,42 @@ class AccountingConfigurationController extends Controller
             'postingRules' => DB::table('accounting_posting_rules')->join('gl_accounts', 'gl_accounts.id', '=', 'accounting_posting_rules.gl_account_id')->where('accounting_posting_rules.company_id', $companyId)->select('accounting_posting_rules.*', 'gl_accounts.code as gl_code', 'gl_accounts.name as gl_name')->orderBy('transaction_type')->orderBy('account_role')->get(),
             'accounts' => DB::table('gl_accounts')->where('company_id', $companyId)->where('is_active', true)->where('allow_posting', true)->orderBy('code')->get(),
             'ruleOptions' => self::RULES,
+            'exchangeRates' => DB::table('accounting_exchange_rates')->where('company_id', $companyId)->orderByDesc('rate_date')->orderBy('currency')->limit(100)->get(),
         ]);
+    }
+
+    public function storeExchangeRate(Request $request, CompanyContext $context): RedirectResponse
+    {
+        $data = $request->validate(['currency' => ['required', 'string', 'size:3', 'not_in:'.strtoupper($context->current()->currency)], 'rate_date' => ['required', 'date'], 'rate_to_base' => ['required', 'numeric', 'gt:0'], 'source' => ['nullable', 'string', 'max:80']]);
+        $data['currency'] = Str::upper($data['currency']);
+        DB::table('accounting_exchange_rates')->updateOrInsert(['company_id' => $context->id(), 'currency' => $data['currency'], 'rate_date' => $data['rate_date']], ['rate_to_base' => $data['rate_to_base'], 'source' => ($data['source'] ?? null) ?: 'manual', 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now()]);
+        AuditLogger::log('accounting_exchange_rate_updated', 'accounting_exchange_rate', $context->id(), null, $data, $context->id());
+
+        return back()->with('status', 'Exchange rate berhasil disimpan.');
+    }
+
+    public function storeFxAccounts(Request $request, CompanyContext $context): RedirectResponse
+    {
+        $data = $request->validate(['realized_fx_gain_account_id' => ['required', 'integer'], 'realized_fx_loss_account_id' => ['required', 'integer'], 'unrealized_fx_gain_account_id' => ['required', 'integer'], 'unrealized_fx_loss_account_id' => ['required', 'integer']]);
+        foreach (['realized_fx_gain_account_id', 'unrealized_fx_gain_account_id'] as $field) {
+            abort_unless(DB::table('gl_accounts')->where('company_id', $context->id())->where('id', $data[$field])->where('type', 'revenue')->where('is_active', true)->where('allow_posting', true)->exists(), 422);
+        }
+        foreach (['realized_fx_loss_account_id', 'unrealized_fx_loss_account_id'] as $field) {
+            abort_unless(DB::table('gl_accounts')->where('company_id', $context->id())->where('id', $data[$field])->where('type', 'expense')->where('is_active', true)->where('allow_posting', true)->exists(), 422);
+        }
+        DB::table('accounting_settings')->updateOrInsert(['company_id' => $context->id()], $data + ['created_at' => now(), 'updated_at' => now()]);
+        AuditLogger::log('accounting_fx_accounts_updated', 'accounting_setting', $context->id(), null, $data, $context->id());
+
+        return back()->with('status', 'FX gain/loss accounts berhasil disimpan.');
+    }
+
+    public function revalue(Request $request, CompanyContext $context, AccountingCurrencyService $service): RedirectResponse
+    {
+        $data = $request->validate(['currency' => ['required', 'string', 'size:3'], 'revaluation_date' => ['required', 'date']]);
+        $id = $service->revalue($context->id(), $data['currency'], $data['revaluation_date'], (int) auth()->id());
+        AuditLogger::log('accounting_fx_revaluation_posted', 'accounting_fx_revaluation', $id, null, $data, $context->id());
+
+        return back()->with('status', 'Period-end FX revaluation berhasil diposting.');
     }
 
     public function storeSettings(Request $request, CompanyContext $context): RedirectResponse

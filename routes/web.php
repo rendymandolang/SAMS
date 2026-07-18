@@ -132,6 +132,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/bank-accounts', [BankReconciliationController::class, 'storeBankAccount'])->name('accounting.bank-accounts.store');
         Route::post('/accounting/bank-statements/import', [BankReconciliationController::class, 'import'])->name('accounting.bank-statements.import');
         Route::post('/accounting/configuration/settings', [AccountingConfigurationController::class, 'storeSettings'])->name('accounting.configuration.settings');
+        Route::post('/accounting/configuration/exchange-rates', [AccountingConfigurationController::class, 'storeExchangeRate'])->name('accounting.configuration.exchange-rates');
+        Route::post('/accounting/configuration/fx-accounts', [AccountingConfigurationController::class, 'storeFxAccounts'])->name('accounting.configuration.fx-accounts');
+        Route::post('/accounting/configuration/fx-revaluation', [AccountingConfigurationController::class, 'revalue'])->name('accounting.configuration.fx-revaluation');
         Route::post('/accounting/configuration/tax-codes', [AccountingConfigurationController::class, 'storeTaxCode'])->name('accounting.configuration.tax-codes');
         Route::post('/accounting/configuration/posting-rules', [AccountingConfigurationController::class, 'storePostingRule'])->name('accounting.configuration.posting-rules');
         Route::post('/accounting/configuration/tax-codes/{taxCode}/toggle', [AccountingConfigurationController::class, 'toggleTaxCode'])->name('accounting.configuration.tax-codes.toggle');

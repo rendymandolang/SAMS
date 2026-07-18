@@ -29,9 +29,13 @@
 - Direct cash-flow statement with opening balance, activity detail, net movement, and closing cash control.
 - Detailed Journal Register and department-filtered Profit & Loss.
 - Monthly, quarterly, and yearly recurring journal templates that generate reviewable drafts with duplicate-safe run history.
+- Date-effective company exchange-rate register with strict missing-rate rejection.
+- Foreign-currency AP and AR invoices retaining transaction-currency and base-currency values in the subledger and General Ledger.
+- Supplier payments and customer receipts at settlement-date rates with automatic realized FX gain or loss posting.
+- Period-end revaluation of open foreign AP/AR balances with immutable, duplicate-safe unrealized FX journals.
 
 ## Accounting core status
 
-The base SaS accounting core and reporting automation are complete. Current enterprise expansion is focused on multi-currency revaluation, consolidated entities, localization packs, electronic tax filing connectors, and jurisdiction-specific statutory reports.
+The base SaS accounting core, reporting automation, and multi-currency subledger are complete. Current enterprise expansion is focused on consolidated entities, eliminations, localization packs, electronic tax filing connectors, and jurisdiction-specific statutory reports.
 
 Every subledger document must post through balanced Journal Vouchers, remain company-scoped, respect period locks, and use reversal rather than destructive changes after posting.

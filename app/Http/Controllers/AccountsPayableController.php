@@ -111,9 +111,6 @@ class AccountsPayableController extends Controller
         ]);
         $companyId = (int) $company->id;
         $validated['currency'] = strtoupper($validated['currency']);
-        if ($validated['currency'] !== strtoupper($company->currency)) {
-            throw ValidationException::withMessages(['currency' => 'Tahap ini hanya mendukung base currency perusahaan.']);
-        }
         abort_unless(DB::table('suppliers')->where('company_id', $companyId)->where('id', $validated['supplier_id'])->where('is_active', true)->exists(), 422);
         if (DB::table('ap_invoices')->where('company_id', $companyId)->where('supplier_id', $validated['supplier_id'])->where('supplier_invoice_number', trim($validated['supplier_invoice_number']))->exists()) {
             throw ValidationException::withMessages(['supplier_invoice_number' => 'Nomor invoice supplier sudah pernah dicatat.']);
@@ -243,7 +240,7 @@ class AccountsPayableController extends Controller
         $paymentId = $service->createPayment((int) $company->id, $companyContext->branch()?->id, (int) auth()->id(), [
             'supplier_id' => $invoice->supplier_id,
             'payment_date' => $validated['payment_date'],
-            'currency' => $company->currency,
+            'currency' => $invoice->currency,
             'cash_account_id' => $validated['cash_account_id'],
             'ap_account_id' => $invoice->ap_account_id,
             'payment_reference' => $validated['payment_reference'] ?? null,

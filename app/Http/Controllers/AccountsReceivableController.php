@@ -63,9 +63,6 @@ class AccountsReceivableController extends Controller
         $company = $context->current();
         $companyId = (int) $company->id;
         $v['currency'] = strtoupper($v['currency']);
-        if ($v['currency'] !== strtoupper($company->currency)) {
-            throw ValidationException::withMessages(['currency' => 'Tahap ini hanya mendukung base currency perusahaan.']);
-        }
         abort_unless(DB::table('accounting_customers')->where('company_id', $companyId)->where('id', $v['customer_id'])->where('is_active', true)->exists(), 422);
         $this->validateAccount($companyId, (int) $v['ar_account_id'], ['asset'], 'ar_account_id');
         if (! empty($v['tax_code_id'])) {
@@ -114,8 +111,9 @@ class AccountsReceivableController extends Controller
     {
         $v = $request->validate(['invoice_id' => ['required', 'integer'], 'receipt_date' => ['required', 'date'], 'cash_account_id' => ['required', 'integer'], 'amount' => ['required', 'numeric', 'gt:0'], 'receipt_reference' => ['nullable', 'string', 'max:120'], 'notes' => ['nullable', 'string', 'max:2000']]);
         $company = $context->current();
+        $invoice = DB::table('ar_invoices')->where('company_id', $company->id)->where('id', $v['invoice_id'])->firstOrFail();
         $this->validateAccount((int) $company->id, (int) $v['cash_account_id'], ['asset'], 'cash_account_id');
-        $id = $service->createReceipt((int) $company->id, $context->branch()?->id, (int) auth()->id(), $v + ['currency' => $company->currency]);
+        $id = $service->createReceipt((int) $company->id, $context->branch()?->id, (int) auth()->id(), $v + ['currency' => $invoice->currency]);
         AuditLogger::log('ar_receipt_posted', 'ar_receipt', $id, null, ['invoice_id' => $v['invoice_id'], 'amount' => $v['amount']], (int) $company->id);
 
         return back()->with('status', 'Penerimaan customer berhasil dialokasikan dan diposting.');

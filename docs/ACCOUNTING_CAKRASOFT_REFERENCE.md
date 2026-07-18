@@ -43,5 +43,7 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Cash Flow uses company-controlled account classifications rather than assuming account codes.
 - Journal Register and Department Profit & Loss preserve the report patterns used by hotel operations while adding web filters and print-ready output.
 - Recurring journals create drafts for finance review and never bypass the normal posting permission or period lock.
+- Foreign invoices preserve original currency evidence while every posted journal remains balanced in company base currency.
+- Settlement-date differences post to configured realized FX accounts; period-end open balances post to configured unrealized FX accounts.
 
 The Cakrasoft source is used as workflow and report reference. SAMS does not copy its branding, proprietary assets, or desktop interface.

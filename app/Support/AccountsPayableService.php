@@ -7,15 +7,22 @@ use Illuminate\Validation\ValidationException;
 
 class AccountsPayableService
 {
+    public function __construct(private readonly AccountingCurrencyService $currencyService) {}
+
     /** @param array<string, mixed> $data */
     public function createInvoice(int $companyId, ?int $branchId, int $userId, array $data): int
     {
         return DB::transaction(function () use ($companyId, $branchId, $userId, $data): int {
-            $subtotal = round(collect($data['lines'])->sum(fn (array $line): float => (float) $line['quantity'] * (float) $line['unit_price']), 4);
+            $rate = $this->currencyService->rate($companyId, $data['currency'], $data['invoice_date']);
+            $foreignSubtotal = round(collect($data['lines'])->sum(fn (array $line): float => (float) $line['quantity'] * (float) $line['unit_price']), 4);
             $taxCode = empty($data['tax_code_id']) ? null : DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $data['tax_code_id'])->where('type', 'purchase')->where('is_active', true)->firstOrFail();
             $withholdingCode = empty($data['withholding_tax_code_id']) ? null : DB::table('accounting_tax_codes')->where('company_id', $companyId)->where('id', $data['withholding_tax_code_id'])->where('type', 'withholding')->where('is_active', true)->firstOrFail();
-            $tax = $taxCode ? round($subtotal * (float) $taxCode->rate_percent / 100, 4) : round((float) ($data['tax_amount'] ?? 0), 4);
-            $withholding = $withholdingCode ? round($subtotal * (float) $withholdingCode->rate_percent / 100, 4) : 0.0;
+            $foreignTax = $taxCode ? round($foreignSubtotal * (float) $taxCode->rate_percent / 100, 4) : round((float) ($data['tax_amount'] ?? 0), 4);
+            $foreignWithholding = $withholdingCode ? round($foreignSubtotal * (float) $withholdingCode->rate_percent / 100, 4) : 0.0;
+            $foreignTotal = round($foreignSubtotal + $foreignTax - $foreignWithholding, 4);
+            $subtotal = $this->currencyService->toBase($foreignSubtotal, $rate);
+            $tax = $this->currencyService->toBase($foreignTax, $rate);
+            $withholding = $this->currencyService->toBase($foreignWithholding, $rate);
             $gross = round($subtotal + $tax, 4);
             $total = round($gross - $withholding, 4);
             $invoiceId = DB::table('ap_invoices')->insertGetId([
@@ -28,6 +35,13 @@ class AccountsPayableService
                 'invoice_date' => $data['invoice_date'],
                 'due_date' => $data['due_date'],
                 'currency' => $data['currency'],
+                'exchange_rate' => $rate,
+                'foreign_subtotal' => $foreignSubtotal,
+                'foreign_tax_amount' => $foreignTax,
+                'foreign_withholding_amount' => $foreignWithholding,
+                'foreign_total_amount' => $foreignTotal,
+                'foreign_outstanding_amount' => $foreignTotal,
+                'carrying_amount' => $total,
                 'status' => 'draft',
                 'subtotal' => $subtotal,
                 'tax_amount' => $tax,
@@ -47,7 +61,8 @@ class AccountsPayableService
             ]);
 
             foreach ($data['lines'] as $index => $line) {
-                $amount = round((float) $line['quantity'] * (float) $line['unit_price'], 4);
+                $foreignAmount = round((float) $line['quantity'] * (float) $line['unit_price'], 4);
+                $amount = $this->currencyService->toBase($foreignAmount, $rate);
                 DB::table('ap_invoice_lines')->insert([
                     'ap_invoice_id' => $invoiceId,
                     'purchase_order_item_id' => $line['purchase_order_item_id'] ?? null,
@@ -56,7 +71,9 @@ class AccountsPayableService
                     'department_id' => $line['department_id'] ?? null,
                     'description' => trim($line['description']),
                     'quantity' => $line['quantity'],
-                    'unit_price' => $line['unit_price'],
+                    'unit_price' => $amount / (float) $line['quantity'],
+                    'foreign_unit_price' => $line['unit_price'],
+                    'foreign_amount' => $foreignAmount,
                     'amount' => $amount,
                     'line_number' => $index + 1,
                     'created_at' => now(),
@@ -122,6 +139,9 @@ class AccountsPayableService
                     'description' => $line->description,
                     'debit' => $line->amount,
                     'credit' => 0,
+                    'foreign_currency' => $invoice->currency,
+                    'foreign_debit' => $line->foreign_amount,
+                    'exchange_rate' => $invoice->exchange_rate,
                     'line_number' => $lineNumber++,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -135,6 +155,9 @@ class AccountsPayableService
                     'description' => 'Input tax '.$invoice->supplier_invoice_number,
                     'debit' => $invoice->tax_amount,
                     'credit' => 0,
+                    'foreign_currency' => $invoice->currency,
+                    'foreign_debit' => $invoice->foreign_tax_amount,
+                    'exchange_rate' => $invoice->exchange_rate,
                     'line_number' => $lineNumber++,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -144,7 +167,9 @@ class AccountsPayableService
                 DB::table('journal_entry_lines')->insert([
                     'journal_entry_id' => $journalId, 'gl_account_id' => $withholdingAccount, 'department_id' => null,
                     'description' => 'Withholding tax '.$invoice->supplier_invoice_number, 'debit' => 0,
-                    'credit' => $invoice->withholding_amount, 'line_number' => $lineNumber++, 'created_at' => now(), 'updated_at' => now(),
+                    'credit' => $invoice->withholding_amount, 'foreign_currency' => $invoice->currency,
+                    'foreign_credit' => $invoice->foreign_withholding_amount, 'exchange_rate' => $invoice->exchange_rate,
+                    'line_number' => $lineNumber++, 'created_at' => now(), 'updated_at' => now(),
                 ]);
             }
             DB::table('journal_entry_lines')->insert([
@@ -154,6 +179,9 @@ class AccountsPayableService
                 'description' => 'Accounts Payable · '.$invoice->supplier_name,
                 'debit' => 0,
                 'credit' => $invoice->total_amount,
+                'foreign_currency' => $invoice->currency,
+                'foreign_credit' => $invoice->foreign_total_amount,
+                'exchange_rate' => $invoice->exchange_rate,
                 'line_number' => $lineNumber,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -188,19 +216,35 @@ class AccountsPayableService
                 throw ValidationException::withMessages(['allocations' => 'Invoice terbuka tidak valid untuk supplier ini.']);
             }
 
-            $total = 0.0;
+            $foreignTotal = 0.0;
+            $carryingTotal = 0.0;
+            $cashTotal = 0.0;
+            $computed = [];
+            $paymentRate = $this->currencyService->rate($companyId, $data['currency'], $data['payment_date']);
             foreach ($allocations as $allocation) {
                 $invoice = $invoices->get($allocation['invoice_id']);
-                $amount = round((float) $allocation['amount'], 4);
-                if ($amount <= 0 || $amount - (float) $invoice->outstanding_amount > .005) {
+                $foreignAmount = round((float) $allocation['amount'], 4);
+                if ($invoice->currency !== $data['currency'] || $foreignAmount <= 0 || $foreignAmount - (float) $invoice->foreign_outstanding_amount > .005) {
                     throw ValidationException::withMessages(['allocations' => 'Alokasi pembayaran melebihi outstanding invoice.']);
                 }
                 if ((int) $invoice->ap_account_id !== (int) $data['ap_account_id']) {
                     throw ValidationException::withMessages(['ap_account_id' => 'Semua invoice harus menggunakan Accounts Payable account yang sama.']);
                 }
-                $total += $amount;
+                $carrying = round((float) $invoice->carrying_amount * $foreignAmount / (float) $invoice->foreign_outstanding_amount, 4);
+                $cash = $this->currencyService->toBase($foreignAmount, $paymentRate);
+                $computed[] = compact('invoice', 'foreignAmount', 'carrying', 'cash');
+                $foreignTotal += $foreignAmount;
+                $carryingTotal += $carrying;
+                $cashTotal += $cash;
             }
-            $total = round($total, 4);
+            $foreignTotal = round($foreignTotal, 4);
+            $carryingTotal = round($carryingTotal, 4);
+            $cashTotal = round($cashTotal, 4);
+            $fx = round($cashTotal - $carryingTotal, 4);
+            $settings = DB::table('accounting_settings')->where('company_id', $companyId)->first();
+            if (abs($fx) > .005 && ! ($fx > 0 ? $settings?->realized_fx_loss_account_id : $settings?->realized_fx_gain_account_id)) {
+                throw ValidationException::withMessages(['currency' => 'Realized FX gain/loss accounts belum dikonfigurasi.']);
+            }
             TransactionPeriodLock::ensureOpen($companyId, 'accounting', $data['payment_date']);
 
             $journalId = DB::table('journal_entries')->insertGetId([
@@ -211,18 +255,22 @@ class AccountsPayableService
                 'source_type' => 'ap_payment',
                 'status' => 'posted',
                 'memo' => 'Supplier Payment · '.(($data['payment_reference'] ?? null) ?: 'No reference'),
-                'total_debit' => $total,
-                'total_credit' => $total,
+                'total_debit' => $carryingTotal + max($fx, 0),
+                'total_credit' => $cashTotal + max(-$fx, 0),
                 'created_by' => $userId,
                 'posted_by' => $userId,
                 'posted_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            DB::table('journal_entry_lines')->insert([
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $data['ap_account_id'], 'department_id' => null, 'description' => 'Accounts Payable settlement', 'debit' => $total, 'credit' => 0, 'line_number' => 1, 'created_at' => now(), 'updated_at' => now()],
-                ['journal_entry_id' => $journalId, 'gl_account_id' => $data['cash_account_id'], 'department_id' => null, 'description' => 'Cash / Bank payment', 'debit' => 0, 'credit' => $total, 'line_number' => 2, 'created_at' => now(), 'updated_at' => now()],
-            ]);
+            $journalLines = [
+                ['journal_entry_id' => $journalId, 'gl_account_id' => $data['ap_account_id'], 'department_id' => null, 'description' => 'Accounts Payable settlement', 'debit' => $carryingTotal, 'credit' => 0, 'foreign_currency' => $data['currency'], 'foreign_debit' => $foreignTotal, 'foreign_credit' => 0, 'exchange_rate' => $paymentRate, 'line_number' => 1, 'created_at' => now(), 'updated_at' => now()],
+                ['journal_entry_id' => $journalId, 'gl_account_id' => $data['cash_account_id'], 'department_id' => null, 'description' => 'Cash / Bank payment', 'debit' => 0, 'credit' => $cashTotal, 'foreign_currency' => $data['currency'], 'foreign_debit' => 0, 'foreign_credit' => $foreignTotal, 'exchange_rate' => $paymentRate, 'line_number' => 2, 'created_at' => now(), 'updated_at' => now()],
+            ];
+            if (abs($fx) > .005) {
+                $journalLines[] = ['journal_entry_id' => $journalId, 'gl_account_id' => $fx > 0 ? $settings->realized_fx_loss_account_id : $settings->realized_fx_gain_account_id, 'department_id' => null, 'description' => 'Realized FX '.($fx > 0 ? 'loss' : 'gain'), 'debit' => max($fx, 0), 'credit' => max(-$fx, 0), 'foreign_currency' => null, 'foreign_debit' => 0, 'foreign_credit' => 0, 'exchange_rate' => null, 'line_number' => 3, 'created_at' => now(), 'updated_at' => now()];
+            }
+            DB::table('journal_entry_lines')->insert($journalLines);
 
             $paymentId = DB::table('ap_payments')->insertGetId([
                 'company_id' => $companyId,
@@ -231,8 +279,11 @@ class AccountsPayableService
                 'document_number' => $this->nextNumber($companyId, 'supplier_payment', 'PV', $data['payment_date']),
                 'payment_date' => $data['payment_date'],
                 'currency' => $data['currency'],
+                'exchange_rate' => $paymentRate,
+                'foreign_amount' => $foreignTotal,
+                'realized_fx_amount' => $fx,
                 'status' => 'posted',
-                'amount' => $total,
+                'amount' => $cashTotal,
                 'cash_account_id' => $data['cash_account_id'],
                 'ap_account_id' => $data['ap_account_id'],
                 'journal_entry_id' => $journalId,
@@ -245,22 +296,25 @@ class AccountsPayableService
                 'updated_at' => now(),
             ]);
 
-            foreach ($allocations as $allocation) {
-                $invoice = $invoices->get($allocation['invoice_id']);
-                $amount = round((float) $allocation['amount'], 4);
-                $paid = round((float) $invoice->paid_amount + $amount, 4);
-                $outstanding = max(0, round((float) $invoice->total_amount - $paid - (float) $invoice->credited_amount, 4));
+            foreach ($computed as $allocation) {
+                extract($allocation);
+                $paid = round((float) $invoice->paid_amount + $carrying, 4);
+                $foreignOutstanding = max(0, round((float) $invoice->foreign_outstanding_amount - $foreignAmount, 4));
+                $carryingOutstanding = max(0, round((float) $invoice->carrying_amount - $carrying, 4));
                 DB::table('ap_payment_allocations')->insert([
                     'ap_payment_id' => $paymentId,
                     'ap_invoice_id' => $invoice->id,
-                    'amount' => $amount,
+                    'amount' => $carrying,
+                    'foreign_amount' => $foreignAmount,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
                 DB::table('ap_invoices')->where('id', $invoice->id)->update([
                     'paid_amount' => $paid,
-                    'outstanding_amount' => $outstanding,
-                    'status' => $outstanding <= .005 ? 'paid' : 'partially_paid',
+                    'outstanding_amount' => $carryingOutstanding,
+                    'foreign_outstanding_amount' => $foreignOutstanding,
+                    'carrying_amount' => $carryingOutstanding,
+                    'status' => $foreignOutstanding <= .005 ? 'paid' : 'partially_paid',
                     'updated_at' => now(),
                 ]);
             }

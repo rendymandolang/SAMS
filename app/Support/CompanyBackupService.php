@@ -27,6 +27,7 @@ class CompanyBackupService
         'accounting_settings', 'accounting_tax_codes', 'accounting_posting_rules',
         'accounting_credit_notes', 'fiscal_year_closes',
         'accounting_recurring_templates', 'accounting_recurring_runs',
+        'accounting_exchange_rates', 'accounting_fx_revaluations',
         'hr_positions', 'hr_employees', 'hr_leave_types', 'hr_leave_requests', 'hr_employee_documents',
         'company_storage_profiles',
     ];
