@@ -72,10 +72,14 @@
                 <a class="nav-link {{ request()->routeIs('accounting.bank-*') ? 'active' : '' }}" href="{{ route('accounting.bank-reconciliation.index') }}"><span>Bank Reconciliation</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.configuration.*') ? 'active' : '' }}" href="{{ route('accounting.configuration.index') }}"><span>Accounting Setup</span></a>
                 <a class="nav-link {{ request()->routeIs('accounting.advanced.*','accounting.credit-notes.*','accounting.fiscal-close.*') ? 'active' : '' }}" href="{{ route('accounting.advanced.index') }}"><span>Credit & Fiscal Controls</span></a>
+                <a class="nav-link {{ request()->routeIs('accounting.automation.*') ? 'active' : '' }}" href="{{ route('accounting.automation.index') }}"><span>Automation & Cash Flow</span></a>
                 <a class="nav-link {{ request('report')==='general-ledger' ? 'active' : '' }}" href="{{ route('accounting.reports.show','general-ledger') }}"><span>General Ledger</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','trial-balance') }}"><span>Trial Balance</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','profit-loss') }}"><span>Profit & Loss</span></a>
                 <a class="nav-link" href="{{ route('accounting.reports.show','balance-sheet') }}"><span>Balance Sheet</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','cash-flow') }}"><span>Cash Flow</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','journal-register') }}"><span>Journal Register</span></a>
+                <a class="nav-link" href="{{ route('accounting.reports.show','department-profit-loss') }}"><span>Department P&amp;L</span></a>
                 @if($user->hasPermission('accounting.post'))<a class="nav-link {{ request()->routeIs('accounting.close-month*')?'active':'' }}" href="{{ route('accounting.close-month') }}"><span>Close Month</span></a>@endif
             @endif
             @if ($canHris)

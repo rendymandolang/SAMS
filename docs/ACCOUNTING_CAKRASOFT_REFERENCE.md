@@ -40,5 +40,8 @@ Reference source (read-only): `F:\BACKUP WD\BUNAKEN OASIS\Cakrasoft Hotel Suite\
 - Credit notes, payment/receipt reversals, and fiscal-year reopen operations always create linked reversal journals instead of deleting ledger history.
 - Customer invoices debit the selected receivable account and credit company-selected revenue plus output-tax accounts.
 - Customer receipts debit cash/bank and credit Accounts Receivable through linked posted journals.
+- Cash Flow uses company-controlled account classifications rather than assuming account codes.
+- Journal Register and Department Profit & Loss preserve the report patterns used by hotel operations while adding web filters and print-ready output.
+- Recurring journals create drafts for finance review and never bypass the normal posting permission or period lock.
 
 The Cakrasoft source is used as workflow and report reference. SAMS does not copy its branding, proprietary assets, or desktop interface.

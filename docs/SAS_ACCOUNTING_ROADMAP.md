@@ -25,9 +25,13 @@
 - AP and AR credit notes that reduce outstanding balances through immutable posted journals.
 - Controlled supplier-payment and customer-receipt reversal with allocation restoration and bank-match protection.
 - Fiscal-year closing to retained earnings, full-year locking, and controlled reopen through reversal journal.
+- Company-configured cash/bank and operating, investing, or financing classifications without forcing a COA template.
+- Direct cash-flow statement with opening balance, activity detail, net movement, and closing cash control.
+- Detailed Journal Register and department-filtered Profit & Loss.
+- Monthly, quarterly, and yearly recurring journal templates that generate reviewable drafts with duplicate-safe run history.
 
 ## Accounting core status
 
-The planned SaS accounting core is complete. Future work is product expansion rather than missing accounting foundation: localization packs, electronic tax filing connectors, multi-currency revaluation, consolidated entities, and jurisdiction-specific statutory reports.
+The base SaS accounting core and reporting automation are complete. Current enterprise expansion is focused on multi-currency revaluation, consolidated entities, localization packs, electronic tax filing connectors, and jurisdiction-specific statutory reports.
 
 Every subledger document must post through balanced Journal Vouchers, remain company-scoped, respect period locks, and use reversal rather than destructive changes after posting.

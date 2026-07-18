@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccessControlController;
 use App\Http\Controllers\AccountingAdvancedController;
+use App\Http\Controllers\AccountingAutomationController;
 use App\Http\Controllers\AccountingCloseController;
 use App\Http\Controllers\AccountingConfigurationController;
 use App\Http\Controllers\AccountingController;
@@ -117,6 +118,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounting/bank-reconciliation/{reconciliation}/print', [BankReconciliationController::class, 'print'])->name('accounting.bank-reconciliation.print');
         Route::get('/accounting/configuration', [AccountingConfigurationController::class, 'index'])->name('accounting.configuration.index');
         Route::get('/accounting/advanced-controls', [AccountingAdvancedController::class, 'index'])->name('accounting.advanced.index');
+        Route::get('/accounting/automation', [AccountingAutomationController::class, 'index'])->name('accounting.automation.index');
     });
     Route::middleware(['module:accounting', 'permission:accounting.manage'])->group(function () {
         Route::post('/accounting/accounts', [AccountingController::class, 'storeAccount'])->name('accounting.accounts.store');
@@ -134,6 +136,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/accounting/configuration/posting-rules', [AccountingConfigurationController::class, 'storePostingRule'])->name('accounting.configuration.posting-rules');
         Route::post('/accounting/configuration/tax-codes/{taxCode}/toggle', [AccountingConfigurationController::class, 'toggleTaxCode'])->name('accounting.configuration.tax-codes.toggle');
         Route::post('/accounting/credit-notes', [AccountingAdvancedController::class, 'storeCreditNote'])->name('accounting.credit-notes.store');
+        Route::post('/accounting/automation/accounts/{account}', [AccountingAutomationController::class, 'updateAccount'])->name('accounting.automation.accounts.update');
+        Route::post('/accounting/automation/templates', [AccountingAutomationController::class, 'store'])->name('accounting.automation.templates.store');
+        Route::post('/accounting/automation/templates/{template}/generate', [AccountingAutomationController::class, 'generate'])->name('accounting.automation.templates.generate');
     });
     Route::post('/accounting/journals/{journal}/post', [AccountingController::class, 'post'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.post');
     Route::post('/accounting/journals/{journal}/reverse', [AccountingController::class, 'reverse'])->middleware(['module:accounting', 'permission:accounting.post'])->name('accounting.reverse');
